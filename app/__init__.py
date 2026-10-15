@@ -1,10 +1,11 @@
 import os
-from datetime import timezone
+from datetime import timezone, date
 from zoneinfo import ZoneInfo
 from flask import Flask, render_template
 from app.config import Config
 from app.extensions import db, migrate, login_manager
 from app.models import User
+from app.i18n import t, get_current_lang, format_localized_date
 
 CAIRO_TZ = ZoneInfo("Africa/Cairo")
 
@@ -38,6 +39,24 @@ def create_app(config_object=Config):
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(employee_bp)
+
+    @app.context_processor
+    def inject_i18n():
+        lang = get_current_lang()
+        is_rtl = (lang == 'ar')
+        dir_attr = 'rtl' if is_rtl else 'ltr'
+        return {
+            'current_lang': lang,
+            'is_rtl': is_rtl,
+            'dir_attr': dir_attr,
+            't': t,
+            '_': t,
+            'today_display': format_localized_date(date.today(), lang)
+        }
+
+    @app.template_filter('t')
+    def translate_filter(key, **kwargs):
+        return t(key, **kwargs)
 
     @app.template_filter('cairo_time')
     def cairo_time(value, fmt='%I:%M %p'):

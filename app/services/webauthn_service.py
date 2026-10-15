@@ -52,7 +52,7 @@ import os
 def _rp_config():
     env_rp_id = current_app.config.get('WEBAUTHN_RP_ID') or os.getenv('WEBAUTHN_RP_ID')
     env_origin = current_app.config.get('WEBAUTHN_ORIGIN') or os.getenv('WEBAUTHN_ORIGIN')
-    rp_name = current_app.config.get('WEBAUTHN_RP_NAME', 'برستيج بصمة')
+    rp_name = current_app.config.get('WEBAUTHN_RP_NAME', 'ريفي بصمة')
 
     rp_id = env_rp_id
     origin = env_origin
@@ -77,9 +77,9 @@ def _rp_config():
                 origin = origin or f"{scheme}://{host_header}"
 
     if not rp_id:
-        rp_id = 'prestige-basma.revyai.tech'
+        rp_id = 'revy-basma.revyai.tech'
     if not origin:
-        origin = 'https://prestige-basma.revyai.tech'
+        origin = 'https://revy-basma.revyai.tech'
 
     return rp_id, rp_name, origin
 

@@ -110,10 +110,29 @@ def test_reports_export_excel_and_csv(client, app):
     with client.session_transaction() as sess:
         sess['_user_id'] = str(admin.id)
 
-    res_excel = client.get('/admin/reports?export=excel')
-    assert res_excel.status_code == 200
-    assert 'spreadsheetml' in res_excel.content_type
+    # Arabic default
+    res_excel_ar = client.get('/admin/reports?export=excel')
+    assert res_excel_ar.status_code == 200
+    assert 'spreadsheetml' in res_excel_ar.content_type
 
-    res_csv = client.get('/admin/reports?export=csv')
-    assert res_csv.status_code == 200
-    assert 'csv' in res_csv.content_type
+    res_csv_ar = client.get('/admin/reports?export=csv')
+    assert res_csv_ar.status_code == 200
+    assert 'csv' in res_csv_ar.content_type
+    # Must start with UTF-8 BOM
+    assert res_csv_ar.data.startswith(b'\xef\xbb\xbf')
+
+    # English mode
+    with client.session_transaction() as sess:
+        sess['lang'] = 'en'
+
+    res_excel_en = client.get('/admin/reports?export=excel')
+    assert res_excel_en.status_code == 200
+    assert 'spreadsheetml' in res_excel_en.content_type
+
+    res_csv_en = client.get('/admin/reports?export=csv')
+    assert res_csv_en.status_code == 200
+    assert 'csv' in res_csv_en.content_type
+    assert res_csv_en.data.startswith(b'\xef\xbb\xbf')
+    assert b'Date' in res_csv_en.data
+    assert b'Employee Name' in res_csv_en.data
+

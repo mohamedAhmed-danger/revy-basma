@@ -1,5 +1,6 @@
 import csv
 import io
+import urllib.parse
 from datetime import timezone
 from zoneinfo import ZoneInfo
 
@@ -9,6 +10,7 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
 from app.models import User, Attendance
+from app.i18n import t
 
 CAIRO_TZ = ZoneInfo("Africa/Cairo")
 
@@ -46,51 +48,74 @@ def get_report(date_from, date_to, zone_id=None, status=None, employee_id=None):
     return query.order_by(Attendance.date.desc(), Attendance.sign_in_time.desc()).all()
 
 
-STATUS_LABELS = {
-    'full_shift': 'شفت كامل',
-    'short_shift': 'شفت غير كامل',
-    None: 'قيد العمل (لم ينصرف)',
-}
+def _get_status_text(shift_status, status_attr, lang='ar'):
+    if shift_status == 'full_shift':
+        return t('export_status_full', lang=lang)
+    elif shift_status == 'short_shift':
+        return t('export_status_short', lang=lang)
+    elif status_attr == 'active':
+        return t('export_status_active', lang=lang)
+    return ''
 
 
-def export_csv(rows):
+def export_csv(rows, lang='ar'):
     buffer = io.StringIO()
     writer = csv.writer(buffer)
-    writer.writerow([
-        'التاريخ', 'الموظف', 'الفرع', 'وقت الحضور', 'وقت الانصراف',
-        'إجمالي الساعات', 'حالة الشفت', 'متأخر', 'دقائق التأخير',
-    ])
+    
+    headers = [
+        t('export_col_date', lang=lang),
+        t('export_col_employee', lang=lang),
+        t('export_col_zone', lang=lang),
+        t('export_col_signin', lang=lang),
+        t('export_col_signout', lang=lang),
+        t('export_col_total_hours', lang=lang),
+        t('export_col_shift_status', lang=lang),
+        t('export_col_late', lang=lang),
+        t('export_col_late_minutes', lang=lang),
+    ]
+    writer.writerow(headers)
+
+    yes_text = t('export_yes', lang=lang)
+    no_text = t('export_no', lang=lang)
 
     for row in rows:
         writer.writerow([
             row.date.isoformat(),
             row.user.name,
-            row.zone.name,
+            row.zone.name if row.zone else '',
             _to_cairo(row.sign_in_time),
             _to_cairo(row.sign_out_time),
             f'{row.total_hours:.1f}' if row.total_hours is not None else '',
-            STATUS_LABELS.get(row.shift_status, row.shift_status),
-            'نعم' if row.is_late else 'لا',
+            _get_status_text(row.shift_status, row.status, lang=lang),
+            yes_text if row.is_late else no_text,
             row.late_minutes or 0,
         ])
 
-    # UTF-8 BOM so Excel opens the Arabic columns correctly instead of mojibake.
+    # UTF-8 BOM so Excel opens Arabic CSV with correct encoding
     csv_bytes = '\ufeff' + buffer.getvalue()
 
+    filename = f"{t('export_filename_csv', lang=lang)}.csv"
+    encoded_filename = urllib.parse.quote(filename)
+
     return Response(
-        csv_bytes,
-        mimetype='text/csv',
-        headers={'Content-Disposition': 'attachment; filename=attendance_report.csv'},
+        csv_bytes.encode('utf-8'),
+        mimetype='text/csv; charset=utf-8',
+        headers={
+            'Content-Disposition': f"attachment; filename=\"{filename}\"; filename*=UTF-8''{encoded_filename}"
+        },
     )
 
 
-def export_excel(rows):
-    """Generates a professionally formatted Excel (.xlsx) file with RTL layout,
-    custom headers, status badge highlighting, and column width auto-fitting."""
+def export_excel(rows, lang='ar'):
+    """Generates a formatted Excel (.xlsx) file with RTL layout for Arabic,
+    LTR layout for English, custom headers, status badge highlighting, and column width auto-fitting."""
     wb = openpyxl.Workbook()
     ws = wb.active
-    ws.title = "تقرير الحضور والغياب"
-    ws.views.sheetView[0].rightToLeft = True
+    ws.title = t('export_sheet_title', lang=lang)
+    
+    # RTL for Arabic, LTR for English
+    is_arabic = (lang == 'ar')
+    ws.views.sheetView[0].rightToLeft = is_arabic
     ws.views.sheetView[0].showGridLines = True
 
     # Styling definitions
@@ -114,7 +139,7 @@ def export_excel(rows):
     font_danger = Font(name="Segoe UI", size=10, bold=True, color="991B1B")
 
     align_center = Alignment(horizontal="center", vertical="center")
-    align_right = Alignment(horizontal="right", vertical="center")
+    align_side = Alignment(horizontal="right" if is_arabic else "left", vertical="center")
 
     thin_border = Border(
         left=Side(style='thin', color='E2E8F0'),
@@ -125,14 +150,21 @@ def export_excel(rows):
 
     # Sheet Title Banner
     ws.merge_cells('A1:I1')
-    ws['A1'] = "تقرير حضور وانصراف الموظفين — برستيج بصمة"
+    ws['A1'] = t('export_title_banner', lang=lang)
     ws['A1'].font = font_title
-    ws['A1'].alignment = align_right
+    ws['A1'].alignment = align_side
     ws.row_dimensions[1].height = 35
 
     headers = [
-        'التاريخ', 'اسم الموظف', 'الفرع', 'وقت الحضور', 'وقت الانصراف',
-        'إجمالي الساعات', 'حالة الشفت', 'التأخير', 'دقائق التأخير'
+        t('export_col_date', lang=lang),
+        t('export_col_employee', lang=lang),
+        t('export_col_zone', lang=lang),
+        t('export_col_signin', lang=lang),
+        t('export_col_signout', lang=lang),
+        t('export_col_total_hours', lang=lang),
+        t('export_col_shift_status', lang=lang),
+        t('export_col_late', lang=lang),
+        t('export_col_late_minutes', lang=lang),
     ]
 
     ws.append([])  # Blank row 2
@@ -147,17 +179,21 @@ def export_excel(rows):
         cell.alignment = align_center
         cell.border = thin_border
 
+    hours_suffix = t('export_hours_suffix', lang=lang)
+    yes_text = t('export_yes', lang=lang)
+    no_text = t('export_no', lang=lang)
+
     # Append Data Rows
     current_row = 4
     for row in rows:
-        formatted_hours = f'{row.total_hours:.1f} ساعة' if row.total_hours is not None else '—'
-        shift_status_text = STATUS_LABELS.get(row.shift_status, row.shift_status)
-        late_text = 'نعم' if row.is_late else 'لا'
+        formatted_hours = f'{row.total_hours:.1f} {hours_suffix}' if row.total_hours is not None else '—'
+        shift_status_text = _get_status_text(row.shift_status, row.status, lang=lang)
+        late_text = yes_text if row.is_late else no_text
 
         data = [
             row.date.isoformat(),
             row.user.name,
-            row.zone.name,
+            row.zone.name if row.zone else '',
             _to_cairo(row.sign_in_time),
             _to_cairo(row.sign_out_time) if row.sign_out_time else '—',
             formatted_hours,
@@ -209,8 +245,13 @@ def export_excel(rows):
     wb.save(buffer)
     buffer.seek(0)
 
+    filename = f"{t('export_filename_excel', lang=lang)}.xlsx"
+    encoded_filename = urllib.parse.quote(filename)
+
     return Response(
         buffer.getvalue(),
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        headers={'Content-Disposition': 'attachment; filename=attendance_report.xlsx'},
+        headers={
+            'Content-Disposition': f"attachment; filename=\"{filename}\"; filename*=UTF-8''{encoded_filename}"
+        },
     )

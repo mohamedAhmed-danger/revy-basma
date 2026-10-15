@@ -1,19 +1,22 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="{{ current_lang|default('ar') }}" dir="{{ dir_attr|default('rtl') }}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}برستيج بصمة{% endblock %}</title>
+  <meta name="description" content="{{ t('brand_name') }} — نظام تسجيل الحضور الذكي / Smart Attendance System">
+  <meta name="theme-color" content="#0F172A">
+  <title>{% block title %}{{ t('brand_name') }}{% endblock %}</title>
 
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
   {% block extra_css %}{% endblock %}
 </head>
-<body class="admin-body">
+
+<body class="admin-body lang-{{ current_lang|default('ar') }}">
 
   <div class="admin-shell">
 
@@ -25,28 +28,35 @@
       <header class="admin-topbar">
         {% block topbar %}
           <div class="admin-topbar__left">
-            <button type="button" class="admin-nav-toggle" id="admin-nav-toggle" onclick="toggleAdminSidebar(true)" aria-label="فتح القائمة">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+            <button type="button" class="admin-nav-toggle" id="admin-nav-toggle" onclick="toggleAdminSidebar(true)" aria-label="{{ t('menu') }}" aria-expanded="false">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
             </button>
 
             <a class="admin-topbar__mobile-brand" href="{{ url_for('admin.dashboard') }}">
-              <img src="{{ url_for('static', filename='images/logo.png') }}" alt="برستيج بصمة">
-              <span>برستيج بصمة</span>
+              <img src="{{ url_for('static', filename='images/revy-mark.png') }}" alt="{{ t('brand_name') }}" onerror="this.onerror=null; this.src='{{ url_for('static', filename='images/logo.png') }}';">
+              <span>{{ t('brand_name') }}</span>
             </a>
 
             <div class="admin-topbar__date">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
               <span>{{ today_display }}</span>
             </div>
           </div>
 
           <div class="admin-topbar__icons">
-            <span class="admin-topbar__icon-btn" title="الإشعارات">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
-            </span>
-            <div class="admin-sidebar__avatar" style="background:#eff6ff;color:#2563eb;width:36px;height:36px;font-size:14px;">
+            <!-- Language Switcher in Admin Topbar -->
+            <div class="lang-switch lang-switch--light">
+              <a href="{{ url_for('main.set_locale', locale='ar') }}" class="lang-switch__btn {{ 'is-active' if current_lang == 'ar' else '' }}">عربي</a>
+              <a href="{{ url_for('main.set_locale', locale='en') }}" class="lang-switch__btn {{ 'is-active' if current_lang == 'en' else '' }}">EN</a>
+            </div>
+
+            <button type="button" class="admin-topbar__icon-btn" aria-label="{{ t('notifications') }}">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+            </button>
+            <div class="admin-sidebar__avatar" style="width:36px;height:36px;font-size:14px;">
               {{ current_user.name[:1] }}
             </div>
+
           </div>
         {% endblock %}
       </header>
@@ -57,8 +67,8 @@
             <div class="flash-stack">
               {% for category, message in messages %}
                 <div class="flash flash--{{ category }}">
-                  <span class="flash__text">{{ message }}</span>
-                  <button type="button" class="flash__dismiss" onclick="this.parentElement.remove()" aria-label="إغلاق الرسالة">×</button>
+                  <span class="flash__text">{{ t(message) }}</span>
+                  <button type="button" class="flash__dismiss" onclick="this.parentElement.remove()" aria-label="{{ t('close') }}">×</button>
                 </div>
               {% endfor %}
             </div>
@@ -66,10 +76,6 @@
         {% endwith %}
 
         {% block content %}{% endblock %}
-
-        <footer style="margin-top:40px; padding:20px 0; text-align:center; font-size:13px; color:var(--text-muted); border-top:1px solid var(--border-color);">
-          <span>2026 © تطوير <a href="http://revyai.tech/" target="_blank" style="color:#2563eb; font-weight:700; text-decoration:underline;">RevyAI (01554019172)</a></span>
-        </footer>
       </div>
 
     </div>

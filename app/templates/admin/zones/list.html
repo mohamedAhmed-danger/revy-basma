@@ -1,16 +1,17 @@
 {% extends "admin/_base.html" %}
 {% set active_nav = 'zones' %}
 
-{% block title %}إدارة المقرات — GeoAttend Pro{% endblock %}
+{% block title %}{{ t('nav_zones') }} — {{ t('brand_name') }}{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
   #zone-map {
     width: 100%;
-    height: 220px;
+    height: 240px;
     border-radius: var(--radius-md);
     z-index: 1;
+    border: 1px solid var(--border-color);
   }
 </style>
 {% endblock %}
@@ -18,52 +19,59 @@
 {% block content %}
 <div class="page-header">
   <div>
-    <h1 class="page-header__title">إدارة المقرات (Zones)</h1>
-    <div class="page-header__sub">إضافة وتعديل فروع الشركة ومواقعها الجغرافية</div>
+    <h1 class="page-header__title">{{ t('nav_zones') }}</h1>
+    <div class="page-header__sub">{{ t('zones_sub') }}</div>
   </div>
-  <a class="btn btn--primary" href="{{ url_for('admin.zones_create') }}">+ إضافة مقر جديد</a>
+  <a class="btn btn--primary" href="{{ url_for('admin.zones_create') }}">+ {{ t('add_zone') }}</a>
 </div>
 
-<div class="zones-grid">
+<div class="dash-grid">
   <!-- Zones List Table (Left Side) -->
-  <div class="panel" style="padding:0;">
+  <div class="panel" style="padding:0; overflow:hidden;">
     <div class="panel__header" style="padding:20px 24px 0 24px;">
-      <h2 class="panel__title">قائمة المقرات</h2>
+      <h2 class="panel__title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        {{ t('zones_list') }}
+      </h2>
     </div>
-    <div class="table-card" style="border:none; box-shadow:none; margin-top:12px;">
+    <div class="table-card" style="border:none; box-shadow:none; margin-top:12px; overflow-x:auto;">
       {% if zones %}
       <table class="table" id="zones-table">
         <thead>
           <tr>
             <th>#</th>
-            <th>اسم الفرع</th>
-            <th>الإحداثيات (Lat, Lng)</th>
-            <th>نطاق المسموح</th>
-            <th>الحالة</th>
-            <th>العمليات</th>
+            <th>{{ t('zone_name') }}</th>
+            <th>{{ t('col_coordinates') }}</th>
+            <th>{{ t('col_radius') }}</th>
+            <th>{{ t('status') }}</th>
+            <th>{{ t('actions') }}</th>
           </tr>
         </thead>
         <tbody>
           {% for zone in zones %}
           <tr class="zone-row {% if loop.first %}is-selected{% endif %}"
               style="cursor:pointer;"
-              onclick="selectZone('{{ zone.name }}', {{ zone.latitude }}, {{ zone.longitude }}, {{ zone.radius_meters }}, {{ 'true' if zone.is_active else 'false' }}, '{{ url_for('admin.zones_edit', zone_id=zone.id) }}', this)">
-            <td>{{ zone.id }}</td>
-            <td style="font-weight: 600;">{{ zone.name }}</td>
-            <td style="font-family: var(--font-mono); font-size:12px;">{{ '%.4f'|format(zone.latitude) }}, {{ '%.4f'|format(zone.longitude) }}</td>
-            <td>{{ zone.radius_meters }} متر</td>
+              onclick="selectZone({{ zone.name|tojson }}, {{ zone.latitude }}, {{ zone.longitude }}, {{ zone.radius_meters }}, {{ 'true' if zone.is_active else 'false' }}, {{ url_for('admin.zones_edit', zone_id=zone.id)|tojson }}, this)">
+            <td>{{ loop.index }}</td>
+            <td style="font-weight: 700;">{{ zone.name }}</td>
+            <td style="font-family: var(--font-mono); font-size:12px;"><span dir="ltr" class="ltr-isolate">{{ '%.4f'|format(zone.latitude) }}, {{ '%.4f'|format(zone.longitude) }}</span></td>
+            <td>{{ zone.radius_meters }} {{ t('meters') }}</td>
             <td>
               {% if zone.is_active %}
-                <span class="badge badge--ok"><span class="badge__dot"></span>نشط</span>
+                <span class="badge badge--ok"><span class="badge__dot"></span>{{ t('active') }}</span>
               {% else %}
-                <span class="badge badge--danger"><span class="badge__dot"></span>غير نشط</span>
+                <span class="badge badge--danger"><span class="badge__dot"></span>{{ t('inactive') }}</span>
               {% endif %}
             </td>
-            <td>
-              <div style="display:flex; gap:8px; align-items:center;">
-                <a class="btn btn--secondary" style="padding:4px 10px; font-size:12px;" href="{{ url_for('admin.zones_edit', zone_id=zone.id) }}">تعديل</a>
-                <form method="POST" action="{{ url_for('admin.zones_delete', zone_id=zone.id) }}" onsubmit="return confirm('تأكيد حذف الفرع؟');">
-                  <button type="submit" class="btn btn--secondary" style="padding:4px 10px; font-size:12px; color:var(--danger);" title="حذف">حذف</button>
+            <td onclick="event.stopPropagation();">
+              <div style="display:flex; gap:6px; align-items:center;">
+                <a class="btn-icon" href="{{ url_for('admin.zones_edit', zone_id=zone.id) }}" title="{{ t('edit') }}">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </a>
+                <form method="POST" action="{{ url_for('admin.zones_delete', zone_id=zone.id) }}" onsubmit="return confirm('{{ t('confirm_delete_zone') }}');" style="margin:0;">
+                  <button type="submit" class="btn-icon btn-icon--danger" title="{{ t('delete') }}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                  </button>
                 </form>
               </div>
             </td>
@@ -72,55 +80,69 @@
         </tbody>
       </table>
       {% else %}
-      <div class="table-empty">لا توجد فروع مضافة حالياً. اضغط على "+ إضافة مقر جديد" للبدء.</div>
+      <div class="empty-state">
+        <div class="empty-state__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        </div>
+        <div class="empty-state__title">{{ t('no_zones_title') }}</div>
+        <div class="empty-state__hint">{{ t('no_zones_hint') }}</div>
+      </div>
       {% endif %}
     </div>
   </div>
 
   <!-- Selected Zone Details & Map (Right Side) -->
-  <div style="display:flex; flex-direction:column; gap:20px;">
+  <div style="display:flex; flex-direction:column; gap:20px; min-width:0;">
     <!-- Map Card -->
     <div class="panel">
       <div class="panel__header">
-        <h2 class="panel__title">موقع الفرع الحالي</h2>
+        <h2 class="panel__title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+          {{ t('zone_map_title') }}
+        </h2>
       </div>
       <div id="zone-map"></div>
     </div>
 
-    <!-- Details Card -->
+    <!-- Details Card (Single Detail Panel, No Duplicate List) -->
     <div class="panel">
       <div class="panel__header">
-        <h2 class="panel__title">تفاصيل المقر</h2>
+        <h2 class="panel__title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          {{ t('zone_details_title') }}
+        </h2>
       </div>
       {% if zones %}
         {% set first_zone = zones[0] %}
         <div class="schedule-row">
-          <span class="schedule-row__label">الاسم</span>
+          <span class="schedule-row__label">{{ t('name') }}</span>
           <span class="schedule-row__value" id="detail-name">{{ first_zone.name }}</span>
         </div>
         <div class="schedule-row">
-          <span class="schedule-row__label">الإحداثيات</span>
-          <span class="schedule-row__value" id="detail-coords" style="font-family:var(--font-mono); font-size:13px;">{{ '%.4f'|format(first_zone.latitude) }}, {{ '%.4f'|format(first_zone.longitude) }}</span>
+          <span class="schedule-row__label">{{ t('col_coordinates') }}</span>
+          <span class="schedule-row__value" id="detail-coords" style="font-family:var(--font-mono); font-size:13px;"><span dir="ltr" class="ltr-isolate">{{ '%.4f'|format(first_zone.latitude) }}, {{ '%.4f'|format(first_zone.longitude) }}</span></span>
         </div>
         <div class="schedule-row">
-          <span class="schedule-row__label">نطاق المسموح</span>
-          <span class="schedule-row__value" id="detail-radius">{{ first_zone.radius_meters }} متر</span>
+          <span class="schedule-row__label">{{ t('col_radius') }}</span>
+          <span class="schedule-row__value" id="detail-radius">{{ first_zone.radius_meters }} {{ t('meters') }}</span>
         </div>
         <div class="schedule-row">
-          <span class="schedule-row__label">الحالة</span>
+          <span class="schedule-row__label">{{ t('status') }}</span>
           <span class="schedule-row__value" id="detail-status">
             {% if first_zone.is_active %}
-              <span class="badge badge--ok">نشط</span>
+              <span class="badge badge--ok"><span class="badge__dot"></span>{{ t('active') }}</span>
             {% else %}
-              <span class="badge badge--danger">غير نشط</span>
+              <span class="badge badge--danger"><span class="badge__dot"></span>{{ t('inactive') }}</span>
             {% endif %}
           </span>
         </div>
         <div style="margin-top:16px;">
-          <a class="btn btn--secondary btn--block" id="detail-edit-btn" href="{{ url_for('admin.zones_edit', zone_id=first_zone.id) }}">تعديل البيانات</a>
+          <a class="btn btn--secondary btn--block" id="detail-edit-btn" href="{{ url_for('admin.zones_edit', zone_id=first_zone.id) }}">{{ t('edit_zone_btn') }}</a>
         </div>
       {% else %}
-        <div class="table-empty">حدد فرعاً لعرض تفاصيله</div>
+        <div class="empty-state" style="padding:20px;">
+          <div class="empty-state__hint">{{ t('select_zone_hint') }}</div>
+        </div>
       {% endif %}
     </div>
   </div>
@@ -131,6 +153,10 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
   var map, marker, circle;
+  var cartoKey = {{ (config.CARTO_API_KEY or '')|tojson }};
+  var tileUrl = cartoKey
+    ? 'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=' + encodeURIComponent(cartoKey)
+    : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
   function initMap(lat, lng, radius, name) {
     var mapEl = document.getElementById('zone-map');
@@ -138,40 +164,58 @@
 
     map = L.map('zone-map').setView([lat, lng], 15);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    L.tileLayer(tileUrl, {
       maxZoom: 19,
-      attribution: '© OpenStreetMap'
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions" target="_blank">CARTO</a>'
     }).addTo(map);
 
-    marker = L.marker([lat, lng]).addTo(map).bindPopup(name).openPopup();
+    marker = L.marker([lat, lng]).addTo(map).bindPopup(name);
+    
+    // Geofence circle styled in Teal (#62C0C0)
     circle = L.circle([lat, lng], {
-      color: '#2563eb',
-      fillColor: '#3b82f6',
-      fillOpacity: 0.2,
+      color: '#62C0C0',
+      fillColor: '#62C0C0',
+      fillOpacity: 0.25,
+      weight: 2,
       radius: radius
     }).addTo(map);
   }
 
   function selectZone(name, lat, lng, radius, isActive, editUrl, trEl) {
-    document.querySelectorAll('.zone-row').forEach(function(r) { r.style.background = ''; });
-    if (trEl) trEl.style.background = 'var(--surface-hover)';
+    document.querySelectorAll('.zone-row').forEach(function(r) { 
+      r.classList.remove('is-selected'); 
+      r.style.background = ''; 
+    });
+    if (trEl) {
+      trEl.classList.add('is-selected');
+    }
 
-    document.getElementById('detail-name').textContent = name;
-    document.getElementById('detail-coords').textContent = lat.toFixed(4) + ', ' + lng.toFixed(4);
-    document.getElementById('detail-radius').textContent = radius + ' متر';
-    document.getElementById('detail-status').innerHTML = isActive ? '<span class="badge badge--ok">نشط</span>' : '<span class="badge badge--danger">غير نشط</span>';
-    document.getElementById('detail-edit-btn').href = editUrl;
+    var detailName = document.getElementById('detail-name');
+    var detailCoords = document.getElementById('detail-coords');
+    var detailRadius = document.getElementById('detail-radius');
+    var detailStatus = document.getElementById('detail-status');
+    var detailEditBtn = document.getElementById('detail-edit-btn');
+
+    if (detailName) detailName.textContent = name;
+    if (detailCoords) detailCoords.textContent = lat.toFixed(4) + ', ' + lng.toFixed(4);
+    if (detailRadius) detailRadius.textContent = radius + ' {{ t("meters") }}';
+    if (detailStatus) {
+      detailStatus.innerHTML = isActive 
+        ? '<span class="badge badge--ok"><span class="badge__dot"></span>{{ t("active") }}</span>' 
+        : '<span class="badge badge--danger"><span class="badge__dot"></span>{{ t("inactive") }}</span>';
+    }
+    if (detailEditBtn) detailEditBtn.href = editUrl;
 
     if (map) {
       map.setView([lat, lng], 15);
-      marker.setLatLng([lat, lng]).setPopupContent(name).openPopup();
+      marker.setLatLng([lat, lng]).setPopupContent(name);
       circle.setLatLng([lat, lng]).setRadius(radius);
     }
   }
 
   document.addEventListener('DOMContentLoaded', function() {
     {% if zones %}
-      initMap({{ zones[0].latitude }}, {{ zones[0].longitude }}, {{ zones[0].radius_meters }}, '{{ zones[0].name }}');
+      initMap({{ zones[0].latitude }}, {{ zones[0].longitude }}, {{ zones[0].radius_meters }}, {{ zones[0].name|tojson }});
     {% endif %}
   });
 </script>

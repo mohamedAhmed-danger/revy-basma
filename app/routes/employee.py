@@ -96,7 +96,7 @@ def sign_in_route():
     webauthn_credential = request.form.get('webauthn_credential')
 
     if not lat or not lng:
-        flash('مقدرناش نحدد موقعك، تأكد إنك سامح للمتصفح بالوصول للموقع وحاول تاني', 'danger')
+        flash('flash_location_unavailable', 'danger')
         return redirect(url_for('employee.dashboard'))
 
     # Batch 12 — WebAuthn check happens before the GPS/business-logic check,
@@ -110,7 +110,7 @@ def sign_in_route():
 
     try:
         sign_in(current_user, lat, lng)
-        flash('تم تسجيل الحضور بنجاح', 'success')
+        flash('flash_signin_success', 'success')
     except ValueError as e:
         flash(str(e), 'danger')
 
@@ -125,7 +125,7 @@ def sign_out_route():
     webauthn_credential = request.form.get('webauthn_credential')
 
     if not lat or not lng:
-        flash('مقدرناش نحدد موقعك، تأكد إنك سامح للمتصفح بالوصول للموقع وحاول تاني', 'danger')
+        flash('flash_location_unavailable', 'danger')
         return redirect(url_for('employee.dashboard'))
 
     challenge = session.pop('webauthn_auth_challenge', None)
@@ -137,7 +137,7 @@ def sign_out_route():
 
     try:
         sign_out(current_user, lat, lng)
-        flash('تم تسجيل الانصراف بنجاح', 'success')
+        flash('flash_signout_success', 'success')
     except ValueError as e:
         flash(str(e), 'danger')
 
@@ -157,7 +157,7 @@ def webauthn_register():
     # ──────────────────────────────────────────────────────────────────────────
     if existing_credentials:
         flash(
-            'لديك جهاز مسجل بالفعل. لا يمكن إضافة جهاز جديد إلا بعد مسح البصمة الحالية من قِبل المسؤول.',
+            'flash_device_already_exists',
             'warning'
         )
         return redirect(url_for('employee.profile'))
@@ -181,12 +181,12 @@ def webauthn_register_submit():
 
     # Double-check: if the user somehow POSTed directly but already has a device, reject it.
     if current_user.webauthn_credentials:
-        flash('لا يمكن إضافة جهاز جديد. يرجى التواصل مع المسؤول لإعادة ضبط البصمة أولاً.', 'danger')
+        flash('flash_device_locked', 'danger')
         return redirect(url_for('employee.profile'))
 
     try:
         webauthn_service.verify_and_save_registration(current_user, credential, challenge, nickname)
-        flash('تم تسجيل بصمة الجهاز بنجاح ✅', 'success')
+        flash('flash_device_enrolled', 'success')
         return redirect(url_for('employee.dashboard'))
     except ValueError as e:
         flash(str(e), 'danger')
@@ -198,7 +198,7 @@ def webauthn_register_submit():
 def webauthn_credential_delete(credential_id):
     try:
         webauthn_service.delete_credential(current_user, credential_id)
-        flash('تم حذف الجهاز', 'success')
+        flash('flash_device_deleted', 'success')
     except ValueError as e:
         flash(str(e), 'danger')
     return redirect(url_for('employee.webauthn_register'))

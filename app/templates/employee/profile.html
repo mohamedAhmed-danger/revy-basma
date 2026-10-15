@@ -1,67 +1,70 @@
 {% extends "employee/_base.html" %}
+{% set active_nav = 'profile' %}
 
-{% block title %}حسابي — GeoAttend Pro{% endblock %}
+{% block title %}{{ t('profile_title') }} — {{ t('brand_name') }}{% endblock %}
 
 {% block content %}
 <div class="page-header" style="margin-bottom:16px;">
-  <h1 class="page-header__title">حسابي</h1>
+  <h1 class="page-header__title">{{ t('profile_title') }}</h1>
 </div>
 
 <div style="display:flex; flex-direction:column; gap:16px;">
 
   <!-- User Profile Card -->
   <div class="emp-card" style="text-align:center; padding:24px 20px;">
-    <div class="emp-avatar" style="width:64px; height:64px; font-size:26px; margin:0 auto 12px auto;">
+    <div class="emp-avatar" style="width:68px; height:68px; font-size:26px; margin:0 auto 12px auto; box-shadow:0 4px 16px rgba(74, 168, 224, 0.35);">
       {{ current_user.name[:1] }}
     </div>
-    <h2 style="font-size:18px; font-weight:700;">{{ current_user.name }}</h2>
-    <div style="font-size:13px; color:var(--text-muted); margin-top:2px;">موظف مقيد بالنظام</div>
+    <h2 style="font-size:18px; font-weight:800; color:var(--text-main);">{{ current_user.name }}</h2>
+    <div style="font-size:13px; color:var(--text-muted); margin-top:2px;">{{ t('emp_role') }}</div>
   </div>
 
   <!-- Assignment Details Card -->
   <div class="emp-card">
     <div class="emp-card__title">
-      <span>👤 تفاصيل الحساب والعمل</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--primary);"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>{{ t('account_details') }}</span>
     </div>
     <div class="schedule-row">
-      <span class="schedule-row__label">الاسم الكامل</span>
+      <span class="schedule-row__label">{{ t('full_name') }}</span>
       <span class="schedule-row__value">{{ current_user.name }}</span>
     </div>
     <div class="schedule-row">
-      <span class="schedule-row__label">الفرع / المقر المخصص</span>
-      <span class="schedule-row__value">{{ current_user.zone.name if current_user.zone else 'غير مخصص' }}</span>
+      <span class="schedule-row__label">{{ t('col_zone') }}</span>
+      <span class="schedule-row__value">{{ current_user.zone.name if current_user.zone else t('no_zone_assigned') }}</span>
     </div>
     <div class="schedule-row">
-      <span class="schedule-row__label">الشفت المخصص</span>
-      <span class="schedule-row__value">{{ current_user.shift_setting.name if current_user.shift_setting else 'غير مخصص' }}</span>
+      <span class="schedule-row__label">{{ t('col_shift') }}</span>
+      <span class="schedule-row__value">{{ current_user.shift_setting.name if current_user.shift_setting else '—' }}</span>
     </div>
     <div class="schedule-row">
-      <span class="schedule-row__label">تاريخ التسجيل</span>
-      <span class="schedule-row__value" style="font-family:var(--font-mono); font-size:13px;">{{ current_user.created_at.strftime('%Y-%m-%d') if current_user.created_at else '—' }}</span>
+      <span class="schedule-row__label">{{ t('reg_date') }}</span>
+      <span class="schedule-row__value" style="font-family:var(--font-mono); font-size:13px;"><span dir="ltr" class="ltr-isolate">{{ current_user.created_at.strftime('%Y-%m-%d') if current_user.created_at else '—' }}</span></span>
     </div>
   </div>
 
   <!-- WebAuthn Device Card -->
   <div class="emp-card">
     <div class="emp-card__title">
-      <span>🔒 بصمة الجهاز الحيوي</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--primary);"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <span>{{ t('bio_security') }}</span>
     </div>
     <div style="display:flex; align-items:center; justify-content:space-between; margin-top:8px;">
       <div>
         {% if current_user.webauthn_credentials %}
-          <span class="badge badge--ok">🟢 تم تسجيل جهاز (Face ID / Fingerprint)</span>
+          <span class="badge badge--ok"><span class="badge__dot"></span>{{ t('badge_enrolled') }}</span>
         {% else %}
-          <span class="badge badge--muted">⚪ لم يتم تسجيل جهاز بعد</span>
+          <span class="badge badge--muted"><span class="badge__dot"></span>{{ t('badge_not_enrolled') }}</span>
         {% endif %}
       </div>
-      <a class="btn btn--secondary" style="font-size:12px; padding:6px 12px;" href="{{ url_for('employee.webauthn_register') }}">إدارة الأجهزة</a>
+      <a class="btn btn--secondary" style="font-size:12px; padding:6px 14px;" href="{{ url_for('employee.webauthn_register') }}">{{ t('manage_devices') }}</a>
     </div>
   </div>
 
   <!-- Logout Button -->
   <div style="margin-top:12px;">
     <a class="btn btn--secondary btn--block" style="color:var(--danger); border-color:#fecaca; background:var(--danger-bg);" href="{{ url_for('auth.logout') }}">
-      تسجيل الخروج
+      {{ t('logout') }}
     </a>
   </div>
 

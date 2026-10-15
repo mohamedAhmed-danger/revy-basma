@@ -1,70 +1,104 @@
 {% extends "admin/_base.html" %}
 {% set active_nav = 'employees' %}
 
-{% block title %}إدارة الموظفين — GeoAttend Pro{% endblock %}
+{% block title %}{{ t('nav_employees') }} — {{ t('brand_name') }}{% endblock %}
 
 {% block content %}
 <div class="page-header">
   <div>
-    <h1 class="page-header__title">إدارة الموظفين</h1>
-    <div class="page-header__sub">عرض وإضافة وتعديل بيانات الموظفين وإدارة الأجهزة المسجلة</div>
+    <h1 class="page-header__title">{{ t('nav_employees') }}</h1>
+    <div class="page-header__sub">{{ t('employees_sub') }}</div>
   </div>
   <div class="page-header__actions">
-    <a class="btn btn--primary" href="{{ url_for('admin.employees_create') }}">+ إضافة موظف جديد</a>
+    <a class="btn btn--primary" href="{{ url_for('admin.employees_create') }}">{{ t('add_employee') }}</a>
   </div>
 </div>
 
 <div class="panel" style="padding:0;">
-  <div class="table-card" style="border:none; box-shadow:none;">
+  <div style="padding: 18px 24px; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+    <div class="admin-search" style="max-width:320px;">
+      <input class="admin-search__input" type="text" id="employee-list-search" placeholder="{{ t('search_placeholder') }}">
+      <span class="admin-search__submit-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </span>
+    </div>
+    <div style="font-size:13px; font-weight:700; color:var(--text-muted);">
+      {{ t('kpi_total_employees') }}: <span style="color:var(--primary);">{{ employees|length }}</span>
+    </div>
+  </div>
+
+  <div class="table-card" style="border:none; box-shadow:none; overflow-x:auto;">
     {% if employees %}
-    <table class="table admin-table--mobile-cards">
+    <table class="table admin-table--mobile-cards" id="employees-table">
       <thead>
         <tr>
           <th>#</th>
-          <th>اسم الموظف</th>
-          <th>الفرع المخصص</th>
-          <th>الشفت المخصص</th>
-          <th>الأجهزة المسجلة (WebAuthn)</th>
-          <th>تاريخ الإنشاء</th>
-          <th>الحالة</th>
-          <th>العمليات</th>
+          <th>{{ t('col_employee') }}</th>
+          <th>{{ t('col_zone') }}</th>
+          <th>{{ t('col_shift') }}</th>
+          <th>{{ t('col_devices') }}</th>
+          <th>{{ t('reg_date') }}</th>
+          <th>{{ t('col_status') }}</th>
+          <th>{{ t('actions') }}</th>
         </tr>
       </thead>
       <tbody>
         {% for emp in employees %}
+        {% set dev_count = emp.webauthn_credentials|length %}
         <tr>
-          <td data-label="#">{{ emp.id }}</td>
-          <td data-label="الاسم" style="font-weight:600;">{{ emp.name }}</td>
-          <td data-label="الفرع">{{ emp.zone.name if emp.zone else 'غير مخصص' }}</td>
-          <td data-label="الشفت">{{ emp.shift_setting.name if emp.shift_setting else 'غير مخصص' }}</td>
-          <td data-label="الأجهزة">
-            {% set dev_count = emp.webauthn_credentials|length %}
+          <td data-label="#">{{ loop.index }}</td>
+          <td data-label="{{ t('col_employee') }}">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div class="emp-row-avatar">{{ emp.name[:1] }}</div>
+              <span style="font-weight:700; color:var(--text-main);">{{ emp.name }}</span>
+            </div>
+          </td>
+          <td data-label="{{ t('col_zone') }}">{{ emp.zone.name if emp.zone else t('unassigned') }}</td>
+          <td data-label="{{ t('col_shift') }}">{{ emp.shift_setting.name if emp.shift_setting else t('unassigned') }}</td>
+          <td data-label="{{ t('col_devices') }}">
             {% if dev_count > 0 %}
-              <span class="badge badge--ok">📱 {{ dev_count }} جهاز مسجل</span>
+              <span class="badge badge--ok">
+                <span class="badge__dot"></span>
+                {{ dev_count }} {{ t('devices_registered') }}
+              </span>
             {% else %}
-              <span class="badge badge--muted">لا يوجد جهاز</span>
+              <span class="badge badge--muted">
+                <span class="badge__dot"></span>
+                {{ t('no_device') }}
+              </span>
             {% endif %}
           </td>
-          <td data-label="تاريخ الإنشاء" style="font-family:var(--font-mono); font-size:13px;">{{ emp.created_at.strftime('%Y-%m-%d') if emp.created_at else '—' }}</td>
-          <td data-label="الحالة">
+          <td data-label="{{ t('reg_date') }}" style="font-family:var(--font-mono); font-size:13px;">
+            <span class="ltr-isolate">{{ emp.created_at.strftime('%Y-%m-%d') if emp.created_at else '—' }}</span>
+          </td>
+          <td data-label="{{ t('col_status') }}">
             {% if emp.is_active %}
-              <span class="badge badge--ok">نشط</span>
+              <span class="badge badge--ok"><span class="badge__dot"></span>{{ t('active') }}</span>
             {% else %}
-              <span class="badge badge--danger">موقف</span>
+              <span class="badge badge--danger"><span class="badge__dot"></span>{{ t('emp_suspended') }}</span>
             {% endif %}
           </td>
-          <td data-label="العمليات">
+          <td data-label="{{ t('actions') }}">
             <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-              <a class="btn btn--secondary" style="padding:4px 10px; font-size:12px;" href="{{ url_for('admin.employees_edit', user_id=emp.id) }}">تعديل</a>
-              
+              <a class="btn-icon"
+                 href="{{ url_for('admin.employees_edit', user_id=emp.id) }}"
+                 aria-label="{{ t('edit') }}"
+                 title="{{ t('edit') }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </a>
+
               {% if dev_count > 0 %}
-                <form method="POST" action="{{ url_for('admin.employees_reset_devices', user_id=emp.id) }}" onsubmit="return confirm('تأكيد إعادة ضبط وحذف الأجهزة المسجلة للموظف ({{ emp.name }})؟');">
-                  <button type="submit" class="btn btn--secondary" style="padding:4px 10px; font-size:12px; color:var(--warn-dark);" title="إعادة ضبط البصمة">إعادة ضبط البصمة</button>
+                <form method="POST" action="{{ url_for('admin.employees_reset_devices', user_id=emp.id) }}" class="js-confirm-form" data-confirm="{{ t('confirm_reset_devices') }} ({{ emp.name|e }})؟" style="margin:0;">
+                  <button type="submit" class="btn-icon" aria-label="{{ t('reset_device') }}" title="{{ t('reset_device') }}" style="color:var(--warn-dark);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                  </button>
                 </form>
               {% endif %}
 
-              <form method="POST" action="{{ url_for('admin.employees_delete', user_id=emp.id) }}" onsubmit="return confirm('تأكيد حذف الموظف ({{ emp.name }}) نهائياً؟');">
-                <button type="submit" class="btn btn--secondary" style="padding:4px 10px; font-size:12px; color:var(--danger);" title="حذف">حذف</button>
+              <form method="POST" action="{{ url_for('admin.employees_delete', user_id=emp.id) }}" class="js-confirm-form" data-confirm="{{ t('confirm_delete_employee') }} ({{ emp.name|e }})؟" style="margin:0;">
+                <button type="submit" class="btn-icon btn-icon--danger" aria-label="{{ t('delete') }}" title="{{ t('delete') }}">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                </button>
               </form>
             </div>
           </td>
@@ -73,8 +107,42 @@
       </tbody>
     </table>
     {% else %}
-    <div class="table-empty">لا يوجد موظفين مقيدين للنظام حالياً. اضغط على "+ إضافة موظف جديد".</div>
+    <div class="empty-state">
+      <div class="empty-state__icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <div class="empty-state__title">{{ t('no_employees_title') }}</div>
+      <div class="empty-state__hint">{{ t('no_employees_hint') }}</div>
+    </div>
     {% endif %}
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  // Live search
+  var searchInput = document.getElementById('employee-list-search');
+  if (searchInput) {
+    searchInput.addEventListener('input', function () {
+      var query = this.value.toLowerCase().trim();
+      document.querySelectorAll('#employees-table tbody tr').forEach(function (row) {
+        var text = row.textContent.toLowerCase();
+        row.style.display = (query === '' || text.indexOf(query) !== -1) ? '' : 'none';
+      });
+    });
+  }
+
+  // Safe confirm dialogs using data-confirm attribute (XSS-safe, bilingual)
+  document.querySelectorAll('.js-confirm-form').forEach(function (form) {
+    form.addEventListener('submit', function (e) {
+      var msg = form.getAttribute('data-confirm');
+      if (msg && !window.confirm(msg)) {
+        e.preventDefault();
+      }
+    });
+  });
+});
+</script>
 {% endblock %}

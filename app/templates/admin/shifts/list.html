@@ -1,160 +1,209 @@
 {% extends "admin/_base.html" %}
 {% set active_nav = 'shifts' %}
 
-{% block title %}إعدادات الشفت — GeoAttend Pro{% endblock %}
+{% block title %}{{ t('nav_shifts') }} — {{ t('brand_name') }}{% endblock %}
 
 {% block content %}
 <div class="page-header">
   <div>
-    <h1 class="page-header__title">إعدادات الشفت</h1>
-    <div class="page-header__sub">تحديد أوقات العمل وقواعد احتساب الشفت والحضور المتأخر</div>
+    <h1 class="page-header__title">{{ t('nav_shifts') }}</h1>
+    <div class="page-header__sub">{{ t('shifts_sub') }}</div>
   </div>
-  <a class="btn btn--primary" href="{{ url_for('admin.shifts_create') }}">+ إضافة شفت جديد</a>
+  <a class="btn btn--primary" href="{{ url_for('admin.shifts_create') }}">{{ t('add_shift') }}</a>
 </div>
 
 <div class="dash-grid">
-  <!-- Left Side: Active Shift Configurations Form / List -->
+  <!-- Left: Active Shift Card -->
   <div class="panel">
     <div class="panel__header">
-      <h2 class="panel__title">إعدادات الشفت الحالية</h2>
+      <h2 class="panel__title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        {% if current_lang == 'ar' %}إعدادات الشفت الحالية{% else %}Current Shift Settings{% endif %}
+      </h2>
     </div>
 
     {% if shifts %}
       {% set active_shift = shifts[0] %}
       <div style="display:flex; flex-direction:column; gap:16px;">
         <div class="field">
-          <label class="field__label">اختر الشفت</label>
+          <label class="field__label">{% if current_lang == 'ar' %}اختر الشفت{% else %}Select Shift{% endif %}</label>
           <select class="field__input" style="width:100%;" onchange="window.location.href=this.value">
             {% for shift in shifts %}
               <option value="{{ url_for('admin.shifts_edit', shift_id=shift.id) }}" {% if loop.first %}selected{% endif %}>
-                {{ shift.name }} (من {{ shift.shift_start_time.strftime('%H:%M') }} إلى {{ shift.sign_in_end_time.strftime('%H:%M') }})
+                {% if current_lang == 'ar' %}
+                  {{ shift.name }} (من {{ shift.shift_start_time.strftime('%H:%M') }} إلى {{ shift.sign_in_end_time.strftime('%H:%M') }})
+                {% else %}
+                  {{ shift.name }} ({{ shift.shift_start_time.strftime('%H:%M') }} – {{ shift.sign_in_end_time.strftime('%H:%M') }})
+                {% endif %}
               </option>
             {% endfor %}
           </select>
         </div>
 
         <div class="schedule-row">
-          <span class="schedule-row__label">اسم الشفت</span>
+          <span class="schedule-row__label">{% if current_lang == 'ar' %}اسم الشفت{% else %}Shift Name{% endif %}</span>
           <span class="schedule-row__value">{{ active_shift.name }}</span>
         </div>
         <div class="schedule-row">
-          <span class="schedule-row__label">بداية الشفت (التوقيت المتوقع)</span>
-          <span class="schedule-row__value">{{ active_shift.shift_start_time.strftime('%H:%M') }} AM</span>
+          <span class="schedule-row__label">{% if current_lang == 'ar' %}بداية الشفت{% else %}Shift Start{% endif %}</span>
+          <span class="schedule-row__value ltr-isolate">{{ active_shift.shift_start_time.strftime('%H:%M') }}</span>
         </div>
         <div class="schedule-row">
-          <span class="schedule-row__label">نهاية نافذة تسجيل الحضور</span>
-          <span class="schedule-row__value">{{ active_shift.sign_in_end_time.strftime('%H:%M') }} AM</span>
+          <span class="schedule-row__label">{% if current_lang == 'ar' %}نهاية نافذة الحضور{% else %}Sign-in Window Ends{% endif %}</span>
+          <span class="schedule-row__value ltr-isolate">{{ active_shift.sign_in_end_time.strftime('%H:%M') }}</span>
         </div>
         <div class="schedule-row">
-          <span class="schedule-row__label">فترة السماح للتأخير</span>
-          <span class="schedule-row__value">{{ active_shift.grace_period_minutes }} دقيقة</span>
+          <span class="schedule-row__label">{% if current_lang == 'ar' %}فترة السماح{% else %}Grace Period{% endif %}</span>
+          <span class="schedule-row__value">{{ active_shift.grace_period_minutes }} {{ t('minutes') }}</span>
         </div>
         <div class="schedule-row">
-          <span class="schedule-row__label">الحد الأدنى لساعات الشفت الكامل</span>
-          <span class="schedule-row__value">{{ active_shift.min_full_shift_hours }} ساعات</span>
+          <span class="schedule-row__label">{% if current_lang == 'ar' %}الحد الأدنى لساعات الشفت{% else %}Min Full Shift Hours{% endif %}</span>
+          <span class="schedule-row__value">{{ active_shift.min_full_shift_hours }} {{ t('hours') }}</span>
         </div>
 
         <div style="margin-top: 12px; display:flex; gap:10px;">
           <a class="btn btn--primary btn--block" href="{{ url_for('admin.shifts_edit', shift_id=active_shift.id) }}">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            تعديل إعدادات الشفت
+            {% if current_lang == 'ar' %}تعديل إعدادات الشفت{% else %}Edit Shift Settings{% endif %}
           </a>
         </div>
       </div>
     {% else %}
-      <div class="table-empty">لا توجد شفتات مضافة بعد. اضغط على "+ إضافة شفت جديد".</div>
+      <div class="empty-state">
+        <div class="empty-state__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div class="empty-state__title">{{ t('no_shifts_title') }}</div>
+        <div class="empty-state__hint">{{ t('no_shifts_hint') }}</div>
+      </div>
     {% endif %}
 
-    <!-- List of All Shifts Summary Table -->
+    <!-- All Shifts Summary Table -->
+    {% if shifts %}
     <div style="margin-top:24px; border-top:1px solid var(--border-color); padding-top:20px;">
-      <h3 style="font-size:15px; font-weight:700; margin-bottom:12px;">جميع الشفتات المتاحة</h3>
-      {% if shifts %}
-      <table class="table" style="font-size:13px;">
-        <thead>
-          <tr>
-            <th>الاسم</th>
-            <th>البداية</th>
-            <th>النهاية</th>
-            <th>السماح</th>
-            <th>عمليات</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for shift in shifts %}
-          <tr>
-            <td style="font-weight:600;">{{ shift.name }}</td>
-            <td>{{ shift.shift_start_time.strftime('%H:%M') }}</td>
-            <td>{{ shift.sign_in_end_time.strftime('%H:%M') }}</td>
-            <td>{{ shift.grace_period_minutes }}د</td>
-            <td>
-              <a class="btn btn--secondary" style="padding:2px 8px; font-size:11px;" href="{{ url_for('admin.shifts_edit', shift_id=shift.id) }}">تعديل</a>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      {% endif %}
+      <h3 style="font-size:15px; font-weight:700; margin-bottom:12px;">
+        {% if current_lang == 'ar' %}جميع الشفتات المتاحة{% else %}All Available Shifts{% endif %}
+      </h3>
+      <div style="overflow-x:auto;">
+        <table class="table" style="font-size:13px;">
+          <thead>
+            <tr>
+              <th>{% if current_lang == 'ar' %}الاسم{% else %}Name{% endif %}</th>
+              <th>{% if current_lang == 'ar' %}البداية{% else %}Start{% endif %}</th>
+              <th>{% if current_lang == 'ar' %}النهاية{% else %}End{% endif %}</th>
+              <th>{% if current_lang == 'ar' %}السماح{% else %}Grace{% endif %}</th>
+              <th>{{ t('actions') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for shift in shifts %}
+            <tr>
+              <td style="font-weight:700;" data-label="{% if current_lang == 'ar' %}الاسم{% else %}Name{% endif %}">{{ shift.name }}</td>
+              <td data-label="{% if current_lang == 'ar' %}البداية{% else %}Start{% endif %}"><span class="ltr-isolate">{{ shift.shift_start_time.strftime('%H:%M') }}</span></td>
+              <td data-label="{% if current_lang == 'ar' %}النهاية{% else %}End{% endif %}"><span class="ltr-isolate">{{ shift.sign_in_end_time.strftime('%H:%M') }}</span></td>
+              <td data-label="{% if current_lang == 'ar' %}السماح{% else %}Grace{% endif %}">{{ shift.grace_period_minutes }} {{ t('minutes') }}</td>
+              <td data-label="{{ t('actions') }}">
+                <div style="display:flex; gap:6px;">
+                  <a class="btn-icon" href="{{ url_for('admin.shifts_edit', shift_id=shift.id) }}" aria-label="{{ t('edit') }}" title="{{ t('edit') }}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  </a>
+                  <form method="POST" action="{{ url_for('admin.shifts_delete', shift_id=shift.id) }}" class="js-confirm-form" data-confirm="{{ t('confirm_delete_shift') }}" style="margin:0;">
+                    <button type="submit" class="btn-icon btn-icon--danger" aria-label="{{ t('delete') }}" title="{{ t('delete') }}">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
+    {% endif %}
   </div>
 
-  <!-- Right Side: Visual Timeline Preview & Rules Callout -->
+  <!-- Right: Visual Timeline Preview & Rules -->
   <div style="display:flex; flex-direction:column; gap:20px;">
-    {% set s = shifts[0] if shifts else None %}
-    <div class="panel">
-      <div class="panel__header">
-        <h2 class="panel__title">⏱️ معاينة قواعد الشفت</h2>
+    {% if shifts %}
+      {% set s = shifts[0] %}
+      <div class="panel">
+        <div class="panel__header">
+          <h2 class="panel__title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            {% if current_lang == 'ar' %}معاينة قواعد الشفت ({{ s.name }}){% else %}Shift Rules Preview ({{ s.name }}){% endif %}
+          </h2>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <div style="padding:14px; background:var(--ok-bg); border-inline-start:4px solid var(--ok); border-radius:var(--radius-md); display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-weight:700; font-size:13px; color:var(--ok-dark);">{% if current_lang == 'ar' %}الحضور في الوقت المحدد{% else %}On Time{% endif %}</div>
+              <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">
+                <span class="ltr-isolate">{{ s.shift_start_time.strftime('%H:%M') }} – {% set rem = (s.shift_start_time.minute + s.grace_period_minutes) % 60 %}{{ '%02d' % ((s.shift_start_time.hour * 60 + s.shift_start_time.minute + s.grace_period_minutes) // 60) }}:{{ '%02d' % rem }}</span>
+              </div>
+            </div>
+            <span class="badge badge--ok"><span class="badge__dot"></span>{% if current_lang == 'ar' %}في الوقت{% else %}On Time{% endif %}</span>
+          </div>
+
+          <div style="padding:14px; background:var(--warn-bg); border-inline-start:4px solid var(--warn); border-radius:var(--radius-md); display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-weight:700; font-size:13px; color:var(--warn-dark);">{% if current_lang == 'ar' %}تأخير مسموح{% else %}Late but Allowed{% endif %}</div>
+              <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">
+                {% if current_lang == 'ar' %}بعد فترة السماح وحتى{% else %}After grace period until{% endif %}
+                <span class="ltr-isolate">{{ s.sign_in_end_time.strftime('%H:%M') }}</span>
+              </div>
+            </div>
+            <span class="badge badge--warn"><span class="badge__dot"></span>{% if current_lang == 'ar' %}متأخر{% else %}Late{% endif %}</span>
+          </div>
+
+          <div style="padding:14px; background:var(--danger-bg); border-inline-start:4px solid var(--danger); border-radius:var(--radius-md); display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-weight:700; font-size:13px; color:var(--danger-dark);">{% if current_lang == 'ar' %}مرفوض{% else %}Rejected{% endif %}</div>
+              <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">
+                {% if current_lang == 'ar' %}بعد{% else %}After{% endif %}
+                <span class="ltr-isolate">{{ s.sign_in_end_time.strftime('%H:%M') }}</span>
+              </div>
+            </div>
+            <span class="badge badge--danger"><span class="badge__dot"></span>{% if current_lang == 'ar' %}مغلق{% else %}Closed{% endif %}</span>
+          </div>
+        </div>
       </div>
+    {% endif %}
 
-      <div class="shift-rules-timeline">
-        <!-- On Time Timeline Item -->
-        <div class="timeline-item timeline-item--ok">
-          <div class="timeline-item__info">
-            <span class="timeline-item__title">الحضور في الوقت المحدد</span>
-            <span class="timeline-item__range">من {{ s.shift_start_time.strftime('%H:%M') if s else '08:00' }} إلى {{ (s.shift_start_time.hour * 60 + s.shift_start_time.minute + (s.grace_period_minutes if s else 15)) // 60 }}:{% set rem = (s.shift_start_time.minute + (s.grace_period_minutes if s else 15)) % 60 %}{{ '0' if rem < 10 }}{{ rem }} AM</span>
-          </div>
-          <span class="badge badge--ok">On Time</span>
-        </div>
-
-        <!-- Late Timeline Item -->
-        <div class="timeline-item timeline-item--warn">
-          <div class="timeline-item__info">
-            <span class="timeline-item__title">تأخير مسموح</span>
-            <span class="timeline-item__range">من {{ (s.shift_start_time.hour * 60 + s.shift_start_time.minute + (s.grace_period_minutes if s else 15) + 1) // 60 }}:{% set rem2 = (s.shift_start_time.minute + (s.grace_period_minutes if s else 15) + 1) % 60 %}{{ '0' if rem2 < 10 }}{{ rem2 }} إلى {{ s.sign_in_end_time.strftime('%H:%M') if s else '10:00' }} AM</span>
-          </div>
-          <span class="badge badge--warn">Late</span>
-        </div>
-
-        <!-- Rejected Timeline Item -->
-        <div class="timeline-item timeline-item--danger">
-          <div class="timeline-item__info">
-            <span class="timeline-item__title">مرفوض (لا يمكن تسجيل الحضور)</span>
-            <span class="timeline-item__range">أكثر من {{ s.sign_in_end_time.strftime('%H:%M') if s else '10:00' }} AM</span>
-          </div>
-          <span class="badge badge--danger">Rejected</span>
-        </div>
-      </div>
-
-      <!-- Notes Box -->
-      <div style="margin-top:20px; background:var(--info-bg); border-right:4px solid var(--info); padding:16px; border-radius:var(--radius-md);">
-        <h4 style="font-size:14px; font-weight:700; color:var(--primary); margin-bottom:8px;">💡 ملاحظات مهمة</h4>
-        <ul style="font-size:13px; color:var(--text-main); padding-right:16px; display:flex; flex-direction:column; gap:6px;">
+    <!-- Notes Box -->
+    <div class="panel" style="background:var(--info-bg); border-inline-start:4px solid var(--primary);">
+      <h4 style="font-size:14px; font-weight:700; color:var(--primary-dark); margin-bottom:8px; display:flex; align-items:center; gap:8px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        {% if current_lang == 'ar' %}ملاحظات قواعد الشفت{% else %}Shift Rules Notes{% endif %}
+      </h4>
+      <ul class="security-list">
+        {% if current_lang == 'ar' %}
           <li>الحد الأدنى لساعات الشفت الكامل يحدد حالة اليوم (Full / Short).</li>
-          <li>التأخير لا يؤثر على إمكانية تسجيل الحضور (ضمن نافذة الحضور).</li>
-          <li>يتم حساب التأخير بناءً على وقت بداية الشفت المحدد + فترة السماح.</li>
-          <li>يمكن تعديل هذه الإعدادات في أي وقت من قبل الأدمن.</li>
-        </ul>
-      </div>
-
-      <!-- Live Example Box -->
-      <div style="margin-top:16px; background:#faf5ff; border-right:4px solid #a855f7; padding:16px; border-radius:var(--radius-md);">
-        <h4 style="font-size:14px; font-weight:700; color:#7e22ce; margin-bottom:6px;">✨ مثال تطبيقي</h4>
-        <p style="font-size:13px; color:var(--text-main);">
-          إذا حضر الموظف في <strong>08:37 AM</strong>:<br>
-          • التأخير: <strong>37 دقيقة</strong>.<br>
-          • ويزال مسموح له بالتسجيل (ضمن نافذة الحضور حتى {{ s.sign_in_end_time.strftime('%H:%M') if s else '10:00' }} AM).
-        </p>
-      </div>
+          <li>التأخير لا يمنع تسجيل الحضور طالما تم التسجيل قبل إغلاق نافذة الحضور.</li>
+          <li>يتم حساب دقائق التأخير آلياً ومقارنتها بساعة السيرفر.</li>
+        {% else %}
+          <li>Min full shift hours determines the day status (Full / Short).</li>
+          <li>Late sign-in is still recorded if within the sign-in window.</li>
+          <li>Late minutes are auto-calculated against the server clock.</li>
+        {% endif %}
+      </ul>
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.js-confirm-form').forEach(function (form) {
+    form.addEventListener('submit', function (e) {
+      var msg = form.getAttribute('data-confirm');
+      if (msg && !window.confirm(msg)) {
+        e.preventDefault();
+      }
+    });
+  });
+});
+</script>
 {% endblock %}

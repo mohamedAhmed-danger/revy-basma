@@ -1,44 +1,52 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="{{ current_lang|default('ar') }}" dir="{{ dir_attr|default('rtl') }}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}برستيج بصمة{% endblock %}</title>
+  <title>{% block title %}{{ t('brand_name') }}{% endblock %}</title>
 
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
   {% block extra_css %}{% endblock %}
 </head>
-<body class="{% block body_class %}{% endblock %}">
+<body class="{% block body_class %}{% endblock %} lang-{{ current_lang|default('ar') }}">
 
   <div class="app-shell">
 
-    <header class="app-header">
-      <div class="app-header__inner">
-        <a class="app-brand" href="{{ url_for('main.home') }}" style="display:flex; align-items:center; gap:10px;">
-          <img src="{{ url_for('static', filename='images/logo.png') }}" alt="برستيج بصمة" style="height:38px; border-radius:8px;">
-          <span class="app-brand__text" style="font-size:18px; font-weight:700; color:var(--text-main);">
-            برستيج بصمة
+    <header class="app-header" style="background:var(--surface); border-bottom:1px solid var(--border-color); padding:12px 24px;">
+      <div class="app-header__inner" style="max-width:1200px; margin:0 auto; display:flex; align-items:center; justify-content:space-between;">
+        <a class="app-brand" href="{{ url_for('main.home') }}" style="display:flex; align-items:center; gap:12px;">
+          <img src="{{ url_for('static', filename='images/logo.png') }}" alt="{{ t('brand_name') }}" style="height:38px; border-radius:8px;">
+          <span class="app-brand__text" style="font-size:18px; font-weight:800; color:var(--text-main);">
+            {{ t('brand_name') }}
           </span>
         </a>
 
-        <nav class="app-nav" aria-label="التنقل الرئيسي">
-          {% block nav_items %}{% endblock %}
-        </nav>
+        <div style="display:flex; align-items:center; gap:14px;">
+          <nav class="app-nav" aria-label="Navigation">
+            {% block nav_items %}{% endblock %}
+          </nav>
+          
+          <!-- Language Switcher -->
+          <div class="lang-switch lang-switch--light">
+            <a href="{{ url_for('main.set_locale', locale='ar') }}" class="lang-switch__btn {{ 'is-active' if current_lang == 'ar' else '' }}">عربي</a>
+            <a href="{{ url_for('main.set_locale', locale='en') }}" class="lang-switch__btn {{ 'is-active' if current_lang == 'en' else '' }}">EN</a>
+          </div>
+        </div>
       </div>
     </header>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
-        <div class="flash-stack" role="status">
+        <div class="flash-stack" role="status" style="max-width:1200px; margin:16px auto; padding:0 20px;">
           {% for category, message in messages %}
             <div class="flash flash--{{ category }}">
-              <span class="flash__text">{{ message }}</span>
-              <button type="button" class="flash__dismiss" aria-label="إغلاق الرسالة">×</button>
+              <span class="flash__text">{{ t(message) }}</span>
+              <button type="button" class="flash__dismiss" onclick="this.parentElement.remove()" aria-label="{{ t('close') }}">×</button>
             </div>
           {% endfor %}
         </div>
@@ -50,7 +58,7 @@
     </main>
 
     <footer class="app-footer" style="text-align:center; padding:20px; font-size:13px; color:var(--text-muted); border-top:1px solid var(--border-color); background:var(--surface);">
-      <span>2026 © تطوير <a href="http://revyai.tech/" target="_blank" style="color:#2563eb; font-weight:700; text-decoration:underline;">RevyAI (01554019172)</a></span>
+      <span>{{ t('copyright') }} <a href="http://revyai.tech/" target="_blank" style="color:var(--primary); font-weight:700;"><span dir="ltr" class="ltr-isolate">RevyAI (01554019172)</span></a></span>
     </footer>
 
   </div>

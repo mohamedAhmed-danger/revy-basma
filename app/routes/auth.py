@@ -25,9 +25,10 @@ def login():
             login_user(user)
             return _redirect_for_role(user)
 
-        flash('اسم المستخدم أو كلمة المرور غلط', 'danger')
+        flash('flash_login_invalid', 'danger')
 
     return render_template('auth/login.html')
+
 
 
 @auth_bp.route('/logout')

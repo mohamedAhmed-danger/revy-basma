@@ -1,14 +1,15 @@
 {% extends "base.html" %}
 
-{% block title %}في مشكلة — GeoAttend Pro{% endblock %}
+{% block title %}500 — {{ t('brand_name') }}{% endblock %}
 
 {% block content %}
-<section class="error-screen">
-  <p class="error-screen__code">500</p>
-  <h1 class="error-screen__title">حصلت مشكلة في السيرفر</h1>
-  <p class="error-screen__text">
-    الخطأ اتسجل عندنا، جرب تاني كمان شوية. لو المشكلة استمرت كلم الأدمن.
+<section class="error-screen" style="max-width:500px; margin:60px auto; text-align:center; padding:32px;">
+  <p class="error-screen__code" style="font-size:72px; font-weight:900; background:linear-gradient(135deg, #EF4444, #6B52A0); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:10px;">500</p>
+  <h1 class="error-screen__title" style="font-size:22px; font-weight:800; margin-bottom:12px;">خطأ في السيرفر / Server Error</h1>
+  <p class="error-screen__text" style="font-size:14px; color:var(--text-muted); margin-bottom:24px;">
+    حدث خطأ غير متوقع في الخادم أثناء معالجة الطلب.<br>
+    An unexpected error occurred while processing your request.
   </p>
-  <a class="btn btn--primary" href="{{ url_for('main.home') }}">الرجوع للصفحة الرئيسية</a>
+  <a class="btn btn--primary" href="{{ url_for('main.home') }}">{{ t('back') }}</a>
 </section>
 {% endblock %}

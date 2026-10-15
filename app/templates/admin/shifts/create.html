@@ -1,23 +1,25 @@
 {% extends "admin/_base.html" %}
 {% set active_nav = 'shifts' %}
 
-{% block title %}إضافة شفت — GeoAttend Pro{% endblock %}
+{% block title %}إضافة شفت — {{ t('brand_name') }}{% endblock %}
 
 {% block content %}
-<a class="page-header__back" href="{{ url_for('admin.shifts') }}">‹ الرجوع للشفتات</a>
+<div style="margin-bottom:14px;">
+  <a class="btn btn--secondary" style="padding:6px 14px; font-size:13px;" href="{{ url_for('admin.shifts') }}">← الرجوع للشفتات</a>
+</div>
 
 <div class="page-header">
   <h1 class="page-header__title">إضافة شفت جديد</h1>
 </div>
 
-<div class="auth-card" style="max-width: 480px; margin: 0;">
-  <form method="POST" action="{{ url_for('admin.shifts_create') }}">
+<div class="panel" style="max-width: 520px; margin: 0;">
+  <form method="POST" action="{{ url_for('admin.shifts_create') }}" style="display:flex; flex-direction:column; gap:16px;">
     <div class="field">
       <label class="field__label" for="name">اسم الشفت</label>
-      <input class="field__input" type="text" id="name" name="name" placeholder="صباحي" required autofocus>
+      <input class="field__input" type="text" id="name" name="name" placeholder="مثال: الشفت الصباحي" required autofocus>
     </div>
 
-    <div class="field-row">
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
       <div class="field">
         <label class="field__label" for="shift_start_time">بداية الشفت</label>
         <input class="field__input" type="time" id="shift_start_time" name="shift_start_time" value="08:00" required>
@@ -28,7 +30,7 @@
       </div>
     </div>
 
-    <div class="field-row">
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
       <div class="field">
         <label class="field__label" for="grace_period_minutes">فترة السماح (دقيقة)</label>
         <input class="field__input" type="number" id="grace_period_minutes" name="grace_period_minutes" min="0" value="15" required>
@@ -40,10 +42,10 @@
     </div>
 
     <div class="field">
-      <p id="preview-strip" class="field__hint"></p>
+      <p id="preview-strip" class="field__label" style="color:var(--primary); font-weight:600;"></p>
     </div>
 
-    <div class="form-actions">
+    <div style="display:flex; gap:10px; margin-top:10px;">
       <button type="submit" class="btn btn--primary">حفظ الشفت</button>
       <a class="btn btn--secondary" href="{{ url_for('admin.shifts') }}">إلغاء</a>
     </div>

@@ -8,7 +8,7 @@ def test_rp_config_defaults(app):
     with app.test_request_context('/', headers={'Host': 'localhost:5000'}):
         rp_id, rp_name, origin = webauthn_service._rp_config()
         assert rp_id == 'localhost'
-        assert rp_name == 'برستيج بصمة'
+        assert rp_name == 'ريفي بصمة'
         assert origin == 'http://localhost:5000'
 
 

@@ -1,7 +1,7 @@
 {% extends "admin/_base.html" %}
 {% set active_nav = 'employees' %}
 
-{% block title %}تعديل بيانات الموظف — GeoAttend Pro{% endblock %}
+{% block title %}تعديل بيانات الموظف: {{ employee.name }} — {{ t('brand_name') }}{% endblock %}
 
 {% block content %}
 <div style="margin-bottom:16px;">
@@ -11,7 +11,7 @@
 <div class="page-header">
   <div>
     <h1 class="page-header__title">تعديل بيانات الموظف: {{ employee.name }}</h1>
-    <div class="page-header__sub">تعديل اسم المستخدم، الفرع، الشفت، أو تغيير كلمة المرور</div>
+    <div class="page-header__sub">تعديل اسم المستخدم، المقر، الشفت، أو تغيير كلمة المرور</div>
   </div>
 </div>
 
@@ -19,7 +19,7 @@
   <form method="POST" action="{{ url_for('admin.employees_edit', user_id=employee.id) }}" style="display:flex; flex-direction:column; gap:20px;">
     
     <div class="field">
-      <label class="field__label" for="name">اسم الموظف / اسم المستخدم</label>
+      <label class="field__label" for="name">{{ t('col_employee') }} / {{ t('username') }}</label>
       <input class="field__input" style="width:100%;" type="text" id="name" name="name" value="{{ employee.name }}" required>
     </div>
 
@@ -29,9 +29,9 @@
     </div>
 
     <div class="field">
-      <label class="field__label" for="zone_id">المقر / الفرع المخصص</label>
+      <label class="field__label" for="zone_id">{{ t('col_zone') }}</label>
       <select class="field__input" style="width:100%;" id="zone_id" name="zone_id" required>
-        <option value="">اختر الفرع...</option>
+        <option value="">اختر المقر / الفرع...</option>
         {% for zone in zones %}
           <option value="{{ zone.id }}" {% if employee.zone_id == zone.id %}selected{% endif %}>{{ zone.name }} (نطاق {{ zone.radius_meters }}m)</option>
         {% endfor %}
@@ -39,7 +39,7 @@
     </div>
 
     <div class="field">
-      <label class="field__label" for="shift_setting_id">الشفت المخصص</label>
+      <label class="field__label" for="shift_setting_id">{{ t('col_shift') }}</label>
       <select class="field__input" style="width:100%;" id="shift_setting_id" name="shift_setting_id" required>
         <option value="">اختر الشفت...</option>
         {% for shift in shifts %}

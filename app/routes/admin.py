@@ -13,6 +13,7 @@ from app.services.admin_stats_service import (
     format_arabic_date,
 )
 from app.services.report_service import get_report, export_csv, export_excel
+from app.i18n import get_current_lang
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -68,7 +69,7 @@ def reports():
     except ValueError:
         date_to = today
 
-    # keep the range sane regardless of what was typed into the two date inputs
+    # Keep the range sane regardless of what was typed into the two date inputs.
     if date_from > date_to:
         date_from, date_to = date_to, date_from
 
@@ -78,10 +79,12 @@ def reports():
 
     rows = get_report(date_from, date_to, zone_id=zone_id, status=status, employee_id=employee_id)
 
+    lang = get_current_lang()
+
     if request.args.get('export') in ('excel', 'xlsx'):
-        return export_excel(rows)
+        return export_excel(rows, lang=lang)
     elif request.args.get('export') == 'csv':
-        return export_csv(rows)
+        return export_csv(rows, lang=lang)
 
     zones_list = Zone.query.order_by(Zone.id).all()
     employees = User.query.filter_by(role='employee').order_by(User.name).all()
@@ -118,7 +121,7 @@ def zones_create():
                 request.form.get('longitude'),
                 request.form.get('radius_meters'),
             )
-            flash('تم إضافة الفرع', 'success')
+            flash('flash_zone_created', 'success')
             return redirect(url_for('admin.zones'))
         except ValueError as e:
             flash(str(e), 'danger')
@@ -140,7 +143,7 @@ def zones_edit(zone_id):
                 request.form.get('radius_meters'),
                 is_active=bool(request.form.get('is_active')),
             )
-            flash('تم تعديل الفرع', 'success')
+            flash('flash_zone_updated', 'success')
             return redirect(url_for('admin.zones'))
         except ValueError as e:
             flash(str(e), 'danger')
@@ -153,7 +156,7 @@ def zones_edit(zone_id):
 def zones_delete(zone_id):
     try:
         delete_zone(zone_id)
-        flash('تم حذف الفرع', 'success')
+        flash('flash_zone_deleted', 'success')
     except ValueError as e:
         flash(str(e), 'danger')
     return redirect(url_for('admin.zones'))
@@ -180,7 +183,7 @@ def shifts_create():
                 request.form.get('grace_period_minutes'),
                 request.form.get('min_full_shift_hours'),
             )
-            flash('تم إضافة الشفت', 'success')
+            flash('flash_shift_created', 'success')
             return redirect(url_for('admin.shifts'))
         except ValueError as e:
             flash(str(e), 'danger')
@@ -203,7 +206,7 @@ def shifts_edit(shift_id):
                 request.form.get('min_full_shift_hours'),
                 is_active=bool(request.form.get('is_active')),
             )
-            flash('تم تعديل الشفت', 'success')
+            flash('flash_shift_updated', 'success')
             return redirect(url_for('admin.shifts'))
         except ValueError as e:
             flash(str(e), 'danger')
@@ -216,7 +219,7 @@ def shifts_edit(shift_id):
 def shifts_delete(shift_id):
     try:
         delete_shift(shift_id)
-        flash('تم حذف الشفت', 'success')
+        flash('flash_shift_deleted', 'success')
     except ValueError as e:
         flash(str(e), 'danger')
     return redirect(url_for('admin.shifts'))
@@ -246,7 +249,7 @@ def employees_create():
                 zone_id=request.form.get('zone_id', type=int),
                 shift_setting_id=request.form.get('shift_setting_id', type=int),
             )
-            flash('تم إضافة الموظف بنجاح', 'success')
+            flash('flash_employee_created', 'success')
             return redirect(url_for('admin.employees'))
         except ValueError as e:
             flash(str(e), 'danger')
@@ -262,7 +265,7 @@ def employees_create():
 def employees_edit(user_id):
     emp = User.query.get_or_404(user_id)
     if emp.role == 'admin':
-        flash('لا يمكن تعديل بيانات المدير من هذه الصفحة', 'danger')
+        flash('flash_employee_admin_edit', 'danger')
         return redirect(url_for('admin.employees'))
 
     if request.method == 'POST':
@@ -276,7 +279,7 @@ def employees_edit(user_id):
                 shift_setting_id=request.form.get('shift_setting_id'),
                 is_active=bool(request.form.get('is_active')),
             )
-            flash('تم تعديل بيانات الموظف بنجاح', 'success')
+            flash('flash_employee_updated', 'success')
             return redirect(url_for('admin.employees'))
         except ValueError as e:
             flash(str(e), 'danger')
@@ -293,7 +296,7 @@ def employees_delete(user_id):
     try:
         from app.services.auth_service import delete_user
         delete_user(user_id)
-        flash('تم حذف الموظف بنجاح', 'success')
+        flash('flash_employee_deleted', 'success')
     except ValueError as e:
         flash(str(e), 'danger')
     return redirect(url_for('admin.employees'))
@@ -309,9 +312,9 @@ def employees_reset_devices(user_id):
         from app.extensions import db
         WebAuthnCredential.query.filter_by(user_id=user_id).delete()
         db.session.commit()
-        flash(f'تم إزالة الأجهزة المسجلة للموظف ({emp.name}) بنجاح ويمكنه الآن تسجيل جهاز جديد', 'success')
+        flash('flash_devices_reset', 'success')
     except Exception as e:
-        flash(f'حصل خطأ: {e}', 'danger')
+        flash(str(e), 'danger')
     return redirect(url_for('admin.employees'))
 
 
@@ -322,7 +325,7 @@ def employees_reset_devices(user_id):
 @admin_required
 def settings():
     if request.method == 'POST':
-        flash('تم حفظ إعدادات النظام بنجاح', 'success')
+        flash('flash_settings_saved', 'success')
         return redirect(url_for('admin.settings'))
 
     from app.models import User, Zone, ShiftSetting, Attendance, WebAuthnCredential
@@ -334,4 +337,4 @@ def settings():
         'registered_devices': WebAuthnCredential.query.count(),
     }
 
-    return render_template('admin/settings.html', stats=stats)
+    return render_template('admin/settings.html', stats=stats)

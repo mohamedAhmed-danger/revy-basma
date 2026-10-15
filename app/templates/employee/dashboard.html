@@ -1,43 +1,56 @@
 {% extends "employee/_base.html" %}
 
-{% block title %}لوحة الموظف — GeoAttend Pro{% endblock %}
+{% block title %}{{ t('brand_name') }} — {{ current_user.name }}{% endblock %}
 
 {% block content %}
 
-<!-- 1. Location Card (موقعك الحالي) -->
+<!-- HTTPS Warning — shown only when page is served over HTTP -->
+<div id="https-warning" class="flash flash--danger" style="display:none; margin-bottom:12px;">
+  <span class="flash__text">
+    <strong>{{ t('https_warning_title') }}</strong> — {{ t('https_warning_text') }}
+  </span>
+</div>
+<script>
+if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+  document.getElementById('https-warning').style.display = 'flex';
+}
+</script>
+
+<!-- 1. Location Card -->
 <div class="emp-card {{ 'emp-card--ok' if live_status and live_status.inside else ('emp-card--danger' if live_status and not live_status.inside else '') }}">
   <div class="emp-card__title">
-    <span>📍 موقعك الحالي</span>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--primary);"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+    <span>{{ t('current_location') }}</span>
   </div>
   {% if not zone %}
     <div class="emp-status-box">
-      <span class="badge badge--muted">لم يتم تحديد فرع لك بعد</span>
+      <span class="badge badge--muted"><span class="badge__dot"></span>{{ t('no_zone_assigned') }}</span>
     </div>
   {% elif live_status %}
     <div class="emp-status-box">
       {% if live_status.inside %}
         <div class="emp-status-badge-big" style="color:var(--ok-dark);">
-          <span>🟢 داخل النطاق</span>
+          <span class="badge badge--ok" style="font-size:15px; padding:6px 14px;"><span class="badge__dot"></span>{{ t('badge_inside') }}</span>
         </div>
         <div class="emp-status-detail">
-          <strong>{{ zone.name }}</strong> — المسافة: {{ '%.0f'|format(live_status.distance) }} متر
+          <strong>{{ zone.name }}</strong> — {{ t('distance') }}: {{ '%.0f'|format(live_status.distance) }} {{ t('meters') }}
         </div>
       {% else %}
         <div class="emp-status-badge-big" style="color:var(--danger-dark);">
-          <span>🔴 خارج النطاق</span>
+          <span class="badge badge--danger" style="font-size:15px; padding:6px 14px;"><span class="badge__dot"></span>{{ t('badge_outside') }}</span>
         </div>
         <div class="emp-status-detail">
-          أنت على بعد {{ '%.0f'|format(live_status.distance) }} متر من <strong>{{ zone.name }}</strong> (المسموح: {{ zone.radius_meters }} متر)
+          {{ '%.0f'|format(live_status.distance) }} {{ t('meters') }} / <strong>{{ zone.name }}</strong> ({{ t('allowed') }}: {{ zone.radius_meters }} {{ t('meters') }})
         </div>
       {% endif %}
     </div>
   {% else %}
     <div class="emp-status-box">
       <div class="emp-status-badge-big" style="color:var(--text-muted);">
-        <span>📍 فرعك: {{ zone.name }}</span>
+        <span>{{ zone.name }}</span>
       </div>
       <div class="emp-status-detail" id="location-detecting-hint">
-        جاري تحديد موقعك الجغرافي دقيقة واحدة...
+        {{ t('loc_detecting') }}
       </div>
     </div>
   {% endif %}
@@ -48,11 +61,12 @@
   <!-- COMPLETED ATTENDANCE STATE -->
   <div class="emp-card emp-card--ok">
     <div class="emp-card__title">
-      <span>🟢 تم تسجيل الانصراف بنجاح</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--ok);"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      <span>{{ t('sign_out_success') }}</span>
     </div>
     
     <div class="duration-hero">
-      <div class="duration-hero__sub">إجمالي ساعات العمل لليوم</div>
+      <div class="duration-hero__sub">{{ t('total_work_hours') }}</div>
       <div class="duration-hero__timer">
         {% if today_attendance.total_hours is not none %}
           {% set h = today_attendance.total_hours|int %}
@@ -64,25 +78,25 @@
       </div>
       <div style="display:flex; justify-content:center; gap:8px; margin-top:8px;">
         {% if today_attendance.shift_status == 'full_shift' %}
-          <span class="badge badge--ok">🟢 Full Shift</span>
+          <span class="badge badge--ok"><span class="badge__dot"></span>{{ t('badge_full_shift') }}</span>
         {% else %}
-          <span class="badge badge--warn">🟠 Short Shift</span>
+          <span class="badge badge--warn"><span class="badge__dot"></span>{{ t('badge_short_shift') }}</span>
         {% endif %}
         
         {% if today_attendance.is_late %}
-          <span class="badge badge--danger">Late {{ today_attendance.late_minutes }}m</span>
+          <span class="badge badge--danger"><span class="badge__dot"></span>{{ t('badge_late') }} {{ today_attendance.late_minutes }}m</span>
         {% else %}
-          <span class="badge badge--ok">On Time</span>
+          <span class="badge badge--ok"><span class="badge__dot"></span>{{ t('badge_on_time') }}</span>
         {% endif %}
       </div>
     </div>
 
     <div class="schedule-row" style="margin-top:12px;">
-      <span class="schedule-row__label">وقت الحضور</span>
+      <span class="schedule-row__label">{{ t('col_sign_in') }}</span>
       <span class="schedule-row__value">{{ today_attendance.sign_in_time | cairo_time }}</span>
     </div>
     <div class="schedule-row">
-      <span class="schedule-row__label">وقت الانصراف</span>
+      <span class="schedule-row__label">{{ t('col_sign_out') }}</span>
       <span class="schedule-row__value">{{ today_attendance.sign_out_time | cairo_time }}</span>
     </div>
   </div>
@@ -92,26 +106,26 @@
   <div class="emp-card emp-card--ok">
     <div class="emp-card__title">
       <div style="display:flex; align-items:center; gap:8px;">
-        <span class="badge badge--ok" style="font-size:14px; padding:6px 12px;">🟢 أنت حاضر</span>
-        <span style="font-size:14px; font-weight:600; color:var(--text-muted);">{{ today_attendance.sign_in_time | cairo_time }}</span>
+        <span class="badge badge--ok" style="font-size:14px; padding:6px 12px;"><span class="badge__dot"></span>{{ t('you_are_present') }}</span>
+        <span style="font-size:14px; font-weight:700; color:var(--text-muted);">{{ today_attendance.sign_in_time | cairo_time }}</span>
       </div>
     </div>
 
     <div class="duration-hero">
-      <div class="duration-hero__sub">الوقت المنقضي حتى الآن</div>
+      <div class="duration-hero__sub">{{ t('elapsed_time') }}</div>
       <div class="duration-hero__timer" id="live-total-duration">0h 0m</div>
       <div style="display:flex; justify-content:center; gap:8px; margin-top:6px;">
         <div id="live-shift-badge">
           {% if shift_progress_percent >= 100 %}
-            <span class="badge badge--ok">🟢 Full Shift</span>
+            <span class="badge badge--ok"><span class="badge__dot"></span>{{ t('badge_full_shift') }}</span>
           {% else %}
-            <span class="badge badge--warn">🟠 Short Shift</span>
+            <span class="badge badge--warn"><span class="badge__dot"></span>{{ t('badge_short_shift') }}</span>
           {% endif %}
         </div>
         {% if today_attendance.is_late %}
-          <span class="badge badge--danger">Late {{ today_attendance.late_minutes }}m</span>
+          <span class="badge badge--danger"><span class="badge__dot"></span>{{ t('badge_late') }} {{ today_attendance.late_minutes }}m</span>
         {% else %}
-          <span class="badge badge--ok">On Time</span>
+          <span class="badge badge--ok"><span class="badge__dot"></span>{{ t('badge_on_time') }}</span>
         {% endif %}
       </div>
     </div>
@@ -128,11 +142,11 @@
     </div>
 
     <div class="schedule-row">
-      <span class="schedule-row__label">وقت الحضور</span>
+      <span class="schedule-row__label">{{ t('col_sign_in') }}</span>
       <span class="schedule-row__value">{{ today_attendance.sign_in_time | cairo_time }}</span>
     </div>
     <div class="schedule-row">
-      <span class="schedule-row__label">الوقت الحالي</span>
+      <span class="schedule-row__label">{{ t('current_time') }}</span>
       <span class="schedule-row__value" id="live-current-time">—</span>
     </div>
 
@@ -143,14 +157,15 @@
       <input type="hidden" id="sign-out-lng" name="lng">
       <input type="hidden" id="sign-out-credential" name="webauthn_credential">
       <button type="button" id="sign-out-btn" class="btn btn--primary btn--xl btn--block" onclick="openSignOutConfirm()">
-        🟢 تسجيل الانصراف
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        {{ t('btn_check_out') }}
       </button>
       <p id="sign-out-status" class="field__label" style="text-align:center; margin-top:8px;"></p>
     </form>
     {% else %}
     <div style="margin-top:16px;">
-      <p style="font-size:13px; color:var(--text-muted); text-align:center; margin-bottom:10px;">لازم تسجل بصمة جهازك الأول قبل تسجيل الانصراف.</p>
-      <a class="btn btn--primary btn--block" href="{{ url_for('employee.webauthn_register') }}">تسجيل بصمة الجهاز</a>
+      <p style="font-size:13px; color:var(--text-muted); text-align:center; margin-bottom:10px;">{{ t('register_device_first') }}</p>
+      <a class="btn btn--primary btn--block" href="{{ url_for('employee.webauthn_register') }}">{{ t('register_device_btn') }}</a>
     </div>
     {% endif %}
   </div>
@@ -159,56 +174,67 @@
   <!-- PRE SIGN-IN STATE -->
   <div class="emp-card">
     <div class="emp-card__title">
-      <span>🕐 تسجيل حضور اليوم</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--primary);"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span>{{ t('check_in_today') }}</span>
     </div>
 
     {% if zone and live_status and not live_status.inside %}
       <!-- Outside Zone Warning -->
-      <div style="background:var(--danger-bg); border-right:4px solid var(--danger); padding:16px; border-radius:var(--radius-md); margin-bottom:16px;">
-        <h4 style="font-size:14px; font-weight:700; color:var(--danger-dark); margin-bottom:4px;">🔴 خارج النطاق</h4>
+      <div style="background:var(--danger-bg); border-inline-start:4px solid var(--danger); padding:16px; border-radius:var(--radius-md); margin-bottom:16px;">
+        <h4 style="font-size:14px; font-weight:700; color:var(--danger-dark); margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          {{ t('outside_zone_alert_title') }}
+        </h4>
         <p style="font-size:13px; color:var(--text-main);">
-          أنت على بعد <strong>{{ '%.0f'|format(live_status.distance) }} متر</strong>.<br>
-          المسموح: <strong>{{ zone.radius_meters }} متر</strong>.<br>
-          لا يمكن تسجيل الحضور، اقترب من المقر وحاول مجدداً.
+          {{ t('distance') }}: <strong>{{ '%.0f'|format(live_status.distance) }} {{ t('meters') }}</strong>.<br>
+          {{ t('allowed') }}: <strong>{{ zone.radius_meters }} {{ t('meters') }}</strong>.<br>
+          {{ t('outside_zone_alert_text') }}
         </p>
       </div>
       <button type="button" class="btn btn--secondary btn--xl btn--block" style="opacity:0.6; cursor:not-allowed;" disabled>
-        لا يمكن تسجيل الحضور
+        {{ t('badge_outside') }}
       </button>
 
     {% elif window_status == 'early' %}
       <!-- Early Sign-in Warning -->
-      <div style="background:var(--warn-bg); border-right:4px solid var(--warn); padding:16px; border-radius:var(--radius-md); margin-bottom:16px;">
-        <h4 style="font-size:14px; font-weight:700; color:var(--warn-dark); margin-bottom:4px;">🟡 لم تفتح نافذة تسجيل الحضور بعد</h4>
+      <div style="background:var(--warn-bg); border-inline-start:4px solid var(--warn); padding:16px; border-radius:var(--radius-md); margin-bottom:16px;">
+        <h4 style="font-size:14px; font-weight:700; color:var(--warn-dark); margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          {{ t('early_window_alert_title') }}
+        </h4>
         <p style="font-size:13px; color:var(--text-main);">
-          تبدأ نافذة الحضور لهذا الشفت الساعة <strong>{{ shift.shift_start_time.strftime('%H:%M') }} AM</strong>.<br>
-          يرجى الانتظار حتى موعد الشفت المعتمد لتسجيل الحضور.
+          {{ shift.shift_start_time.strftime('%H:%M') }} AM
         </p>
       </div>
       <button type="button" class="btn btn--secondary btn--xl btn--block" style="opacity:0.6; cursor:not-allowed;" disabled>
-        لم يبدأ وقت الحضور بعد
+        {{ t('early_window_alert_title') }}
       </button>
 
     {% elif window_status == 'expired' %}
       <!-- Expired Window Warning -->
-      <div style="background:var(--danger-bg); border-right:4px solid var(--danger); padding:16px; border-radius:var(--radius-md); margin-bottom:16px;">
-        <h4 style="font-size:14px; font-weight:700; color:var(--danger-dark); margin-bottom:4px;">🔴 انتهى وقت تسجيل الحضور اليوم</h4>
+      <div style="background:var(--danger-bg); border-inline-start:4px solid var(--danger); padding:16px; border-radius:var(--radius-md); margin-bottom:16px;">
+        <h4 style="font-size:14px; font-weight:700; color:var(--danger-dark); margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          {{ t('expired_window_alert_title') }}
+        </h4>
         <p style="font-size:13px; color:var(--text-main);">
-          كان وقت تسجيل الحضور المسموح به حتى الساعة <strong>{{ shift.sign_in_end_time.strftime('%H:%M') }} AM</strong>.<br>
-          تعذر تسجيل الحضور بعد انتهاء الفترة المحددة، وسيتم تسجيل حالة اليوم كـ <strong>غياب</strong>.
+          {{ shift.sign_in_end_time.strftime('%H:%M') }} AM
         </p>
       </div>
       <button type="button" class="btn btn--secondary btn--xl btn--block" style="opacity:0.6; cursor:not-allowed;" disabled>
-        انتهى وقت تسجيل الحضور
+        {{ t('expired_window_alert_title') }}
       </button>
 
     {% else %}
 
       {% if window_status == 'late' %}
-        <div style="background:var(--warn-bg); border-right:4px solid var(--warn); padding:14px; border-radius:var(--radius-md); margin-bottom:16px;">
-          <h4 style="font-size:13px; font-weight:700; color:var(--warn-dark); margin-bottom:2px;">🟠 تسجيل حضور متأخر</h4>
+        <div style="background:var(--warn-bg); border-inline-start:4px solid var(--warn); padding:14px; border-radius:var(--radius-md); margin-bottom:16px;">
+          <h4 style="font-size:13px; font-weight:700; color:var(--warn-dark); margin-bottom:2px; display:flex; align-items:center; gap:6px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            {{ t('late_warning_title') }}
+          </h4>
           <p style="font-size:12px; color:var(--text-main);">
-            تجاوزت فترة السماح. يمكنك تسجيل الحضور الآن وسيتم تسجيل مدة التأخير في السجل.
+            {{ t('late_warning_text') }}
           </p>
         </div>
       {% endif %}
@@ -220,18 +246,19 @@
           <input type="hidden" id="sign-in-credential" name="webauthn_credential">
 
           <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">
-            تأكد أنك متواجد داخل مقر الشركة، ثم اضغط زر الحضور أدناه لتأكيد الموقع والرمز الحيوي.
+            {{ t('brand_tagline') }}
           </p>
 
           <button type="button" id="sign-in-btn" class="btn btn--primary btn--xl btn--block" onclick="submitSignIn()">
-            {% if window_status == 'late' %}🟠 تسجيل حضور متأخر{% else %}👆 تسجيل الحضور{% endif %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+            {% if window_status == 'late' %}{{ t('btn_check_in_late') }}{% else %}{{ t('btn_check_in') }}{% endif %}
           </button>
           <p id="sign-in-status" class="field__label" style="text-align:center; margin-top:8px;"></p>
         </form>
       {% else %}
         <div style="padding:10px 0;">
-          <p style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">يلزم تسجيل بصمة جهازك (Face ID / Fingerprint) لتمكين الحضور.</p>
-          <a class="btn btn--primary btn--block" href="{{ url_for('employee.webauthn_register') }}">تسجيل بصمة الجهاز</a>
+          <p style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">{{ t('register_device_first') }}</p>
+          <a class="btn btn--primary btn--block" href="{{ url_for('employee.webauthn_register') }}">{{ t('register_device_btn') }}</a>
         </div>
       {% endif %}
 
@@ -240,27 +267,28 @@
 
 {% endif %}
 
-<!-- 3. Shift Schedule Details Card (مواعيد الشفت) -->
+<!-- 3. Shift Schedule Details Card -->
 {% if shift %}
 <div class="emp-card">
   <div class="emp-card__title">
-    <span>📋 مواعيد الشفت — {{ shift.name }}</span>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--primary);"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+    <span>{{ t('shift_schedule') }} — {{ shift.name }}</span>
   </div>
   <div class="schedule-row">
-    <span class="schedule-row__label">بداية الشفت</span>
+    <span class="schedule-row__label">{{ t('col_start_time') }}</span>
     <span class="schedule-row__value">{{ shift.shift_start_time.strftime('%H:%M') }} AM</span>
   </div>
   <div class="schedule-row">
-    <span class="schedule-row__label">الافتتاح الحضور حتى</span>
+    <span class="schedule-row__label">{{ t('col_sign_in_end') }}</span>
     <span class="schedule-row__value">{{ shift.sign_in_end_time.strftime('%H:%M') }} AM</span>
   </div>
   <div class="schedule-row">
-    <span class="schedule-row__label">فترة السماح</span>
-    <span class="schedule-row__value">{{ shift.grace_period_minutes }} دقيقة</span>
+    <span class="schedule-row__label">{{ t('col_grace_period') }}</span>
+    <span class="schedule-row__value">{{ shift.grace_period_minutes }} {{ t('minutes') if t('minutes') != 'minutes' else 'min' }}</span>
   </div>
   <div class="schedule-row">
-    <span class="schedule-row__label">حد الشفت الكامل</span>
-    <span class="schedule-row__value">{{ shift.min_full_shift_hours }} ساعات</span>
+    <span class="schedule-row__label">{{ t('col_min_hours') }}</span>
+    <span class="schedule-row__value">{{ shift.min_full_shift_hours }} {{ t('hours') if t('hours') != 'hours' else 'hrs' }}</span>
   </div>
 </div>
 {% endif %}
@@ -273,30 +301,30 @@
 
 <!-- 4. Sign-Out Confirmation Overlay Modal -->
 {% if today_attendance and today_attendance.status == 'active' and has_webauthn %}
-<div class="confirm-overlay" id="signout-confirm-overlay" hidden>
+<div class="confirm-overlay" id="signout-confirm-overlay" style="display:none;" hidden>
   <div class="confirm-card">
-    <div class="confirm-card__title">تأكيد تسجيل الانصراف؟</div>
+    <div class="confirm-card__title">{{ t('confirm_sign_out_title') }}</div>
     
     <div class="schedule-row">
-      <span class="schedule-row__label">وقت الحضور</span>
+      <span class="schedule-row__label">{{ t('col_sign_in') }}</span>
       <span class="schedule-row__value">{{ today_attendance.sign_in_time | cairo_time }}</span>
     </div>
     <div class="schedule-row">
-      <span class="schedule-row__label">وقت الانصراف</span>
+      <span class="schedule-row__label">{{ t('col_sign_out') }}</span>
       <span class="schedule-row__value" id="confirm-out-time">—</span>
     </div>
     <div class="schedule-row">
-      <span class="schedule-row__label">إجمالي العمل</span>
+      <span class="schedule-row__label">{{ t('col_total_hours') }}</span>
       <span class="schedule-row__value" id="confirm-total">—</span>
     </div>
     <div class="schedule-row">
-      <span class="schedule-row__label">الحالة المتوقعة</span>
+      <span class="schedule-row__label">{{ t('expected_status') }}</span>
       <span class="schedule-row__value" id="confirm-status-badge">—</span>
     </div>
 
     <div style="display:flex; gap:12px; margin-top:16px;">
-      <button type="button" class="btn btn--primary btn--block" onclick="confirmSignOut()">تأكيد الانصراف</button>
-      <button type="button" class="btn btn--secondary btn--block" onclick="closeSignOutConfirm()">إلغاء</button>
+      <button type="button" class="btn btn--primary btn--block" onclick="confirmSignOut()">{{ t('confirm') }}</button>
+      <button type="button" class="btn btn--secondary btn--block" onclick="closeSignOutConfirm()">{{ t('cancel') }}</button>
     </div>
   </div>
 </div>
@@ -309,13 +337,14 @@
 <script src="https://unpkg.com/@simplewebauthn/browser@13.3.0/dist/bundle/index.umd.min.js"></script>
 {% endif %}
 <script>
+var CURRENT_LANG = "{{ current_lang|default('ar') }}";
 var WEBAUTHN_AUTH_OPTIONS = {{ webauthn_auth_options | safe if webauthn_auth_options else 'null' }};
 var SIGN_IN_EPOCH_MS = {{ sign_in_epoch_ms if sign_in_epoch_ms else 'null' }};
 var REQUIRED_HOURS = {{ (required_hours or 0) }};
 
 function runWebAuthnThenSubmit(statusEl, buttonEl, credentialFieldId, formId) {
   if (!WEBAUTHN_AUTH_OPTIONS || typeof SimpleWebAuthnBrowser === 'undefined') {
-    statusEl.textContent = 'المتصفح لا يدعم البصمة الحيوي الحالية';
+    statusEl.textContent = (CURRENT_LANG === 'ar') ? 'المتصفح لا يدعم البصمة الحيوي الحالية' : 'Browser does not support biometric verification';
     statusEl.style.color = 'var(--danger-dark)';
     buttonEl.disabled = false;
     return;
@@ -326,7 +355,7 @@ function runWebAuthnThenSubmit(statusEl, buttonEl, credentialFieldId, formId) {
     WEBAUTHN_AUTH_OPTIONS.rpId = (host === '127.0.0.1') ? 'localhost' : host;
   }
 
-  statusEl.textContent = 'جاري التأكد من البصمة الجغرافية...';
+  statusEl.textContent = (CURRENT_LANG === 'ar') ? 'جاري التأكد من البصمة...' : 'Verifying biometric signature...';
 
   SimpleWebAuthnBrowser.startAuthentication({ optionsJSON: WEBAUTHN_AUTH_OPTIONS })
     .then(function (authenticationResponse) {
@@ -334,8 +363,8 @@ function runWebAuthnThenSubmit(statusEl, buttonEl, credentialFieldId, formId) {
       document.getElementById(formId).submit();
     })
     .catch(function (error) {
-      var msg = (error && (error.message || error.name)) ? (error.name + ': ' + error.message) : 'تم إلغاء التسجيل';
-      statusEl.textContent = 'تعذر تأكيد البصمة (' + msg + ')';
+      var msg = (error && (error.message || error.name)) ? (error.name + ': ' + error.message) : 'Canceled';
+      statusEl.textContent = (CURRENT_LANG === 'ar') ? ('تعذر تأكيد البصمة (' + msg + ')') : ('Biometric verification failed (' + msg + ')');
       statusEl.style.color = 'var(--danger-dark)';
       buttonEl.disabled = false;
     });
@@ -346,13 +375,13 @@ function submitSignIn() {
   var button = document.getElementById('sign-in-btn');
 
   if (!navigator.geolocation) {
-    status.textContent = 'المتصفح لا يدعم تحديد الموقع';
+    status.textContent = (CURRENT_LANG === 'ar') ? 'المتصفح لا يدعم تحديد الموقع' : 'Browser does not support geolocation';
     status.style.color = 'var(--danger-dark)';
     return;
   }
 
   button.disabled = true;
-  status.textContent = 'جاري قراءة الموقع...';
+  status.textContent = (CURRENT_LANG === 'ar') ? 'جاري قراءة الموقع...' : 'Detecting GPS position...';
 
   navigator.geolocation.getCurrentPosition(
     function (position) {
@@ -361,7 +390,7 @@ function submitSignIn() {
       runWebAuthnThenSubmit(status, button, 'sign-in-credential', 'sign-in-form');
     },
     function (error) {
-      status.textContent = 'يرجى السماح بالوصول للموقع الجغرافي للمتابعة';
+      status.textContent = (CURRENT_LANG === 'ar') ? 'يرجى السماح بالوصول للموقع الجغرافي للمتابعة' : 'Please allow location permission to continue';
       status.style.color = 'var(--danger-dark)';
       button.disabled = false;
     },
@@ -374,13 +403,13 @@ function submitSignOut() {
   var button = document.getElementById('sign-out-btn');
 
   if (!navigator.geolocation) {
-    status.textContent = 'المتصفح لا يدعم تحديد الموقع';
+    status.textContent = (CURRENT_LANG === 'ar') ? 'المتصفح لا يدعم تحديد الموقع' : 'Browser does not support geolocation';
     status.style.color = 'var(--danger-dark)';
     return;
   }
 
   button.disabled = true;
-  status.textContent = 'جاري قراءة الموقع...';
+  status.textContent = (CURRENT_LANG === 'ar') ? 'جاري قراءة الموقع...' : 'Detecting GPS position...';
 
   navigator.geolocation.getCurrentPosition(
     function (position) {
@@ -389,7 +418,7 @@ function submitSignOut() {
       runWebAuthnThenSubmit(status, button, 'sign-out-credential', 'sign-out-form');
     },
     function (error) {
-      status.textContent = 'يرجى السماح بالوصول للموقع الجغرافي للمتابعة';
+      status.textContent = (CURRENT_LANG === 'ar') ? 'يرجى السماح بالوصول للموقع الجغرافي للمتابعة' : 'Please allow location permission to continue';
       status.style.color = 'var(--danger-dark)';
       button.disabled = false;
     },
@@ -398,14 +427,15 @@ function submitSignOut() {
 }
 
 function formatClock(d) {
-  return d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
+  var locale = (CURRENT_LANG === 'ar') ? 'ar-EG' : 'en-US';
+  return d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', hour12: true });
 }
 
 function formatDuration(ms) {
   var totalMinutes = Math.max(0, Math.floor(ms / 60000));
   var h = Math.floor(totalMinutes / 60);
   var m = totalMinutes % 60;
-  return h + 'س ' + m + 'د';
+  return h + 'h ' + m + 'm';
 }
 
 function openSignOutConfirm() {
@@ -426,14 +456,13 @@ function openSignOutConfirm() {
   if (badge) {
     var reqHours = (typeof REQUIRED_HOURS === 'number') ? REQUIRED_HOURS : 0;
     if (reqHours > 0 && elapsedHours >= reqHours) {
-      badge.innerHTML = '<span class="badge badge--ok">🟢 شفت كامل</span>';
+      badge.innerHTML = '<span class="badge badge--ok">🟢 {{ t('badge_full_shift') }}</span>';
     } else {
-      badge.innerHTML = '<span class="badge badge--warn">🟠 شفت قصير</span>';
+      badge.innerHTML = '<span class="badge badge--warn">🟠 {{ t('badge_short_shift') }}</span>';
     }
   }
 
   overlay.style.display = 'flex';
-  overlay.classList.add('active');
   overlay.removeAttribute('hidden');
 }
 
@@ -441,7 +470,6 @@ function closeSignOutConfirm() {
   var overlay = document.getElementById('signout-confirm-overlay');
   if (overlay) {
     overlay.style.display = 'none';
-    overlay.classList.remove('active');
     overlay.setAttribute('hidden', 'true');
   }
 }
@@ -466,9 +494,9 @@ function tickLiveDuration() {
   if (badgeEl && REQUIRED_HOURS) {
     var elapsedHours = elapsedMs / 3600000;
     if (elapsedHours >= REQUIRED_HOURS) {
-      badgeEl.innerHTML = '<span class="badge badge--ok">🟢 Full Shift</span>';
+      badgeEl.innerHTML = '<span class="badge badge--ok">🟢 {{ t('badge_full_shift') }}</span>';
     } else {
-      badgeEl.innerHTML = '<span class="badge badge--warn">🟠 Short Shift</span>';
+      badgeEl.innerHTML = '<span class="badge badge--warn">🟠 {{ t('badge_short_shift') }}</span>';
     }
   }
 }
@@ -487,13 +515,15 @@ if (SIGN_IN_EPOCH_MS) {
   navigator.geolocation.getCurrentPosition(
     function (position) {
       var form = document.getElementById('live-status-form');
-      form.querySelector('[name="lat"]').value = position.coords.latitude;
-      form.querySelector('[name="lng"]').value = position.coords.longitude;
-      form.submit();
+      if (form) {
+        form.querySelector('[name="lat"]').value = position.coords.latitude;
+        form.querySelector('[name="lng"]').value = position.coords.longitude;
+        form.submit();
+      }
     },
     function () {
       var hint = document.getElementById('location-detecting-hint');
-      if (hint) hint.textContent = 'تعذر تحديد الموقع تلقائياً';
+      if (hint) hint.textContent = (CURRENT_LANG === 'ar') ? 'تعذر تحديد الموقع تلقائياً' : 'Could not detect location automatically';
     },
     { enableHighAccuracy: true, timeout: 10000 }
   );

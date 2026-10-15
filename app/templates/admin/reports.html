@@ -1,14 +1,14 @@
 {% extends "admin/_base.html" %}
 {% set active_nav = 'reports' %}
 
-{% block title %}التقارير — GeoAttend Pro{% endblock %}
+{% block title %}{{ t('reports_title') }} — {{ t('brand_name') }}{% endblock %}
 
 {% block content %}
 
 <div class="page-header">
   <div>
-    <h1 class="page-header__title">التقارير اليومية</h1>
-    <div class="page-header__sub">عرض وتصدير تقارير الحضور والانصراف بالتفصيل</div>
+    <h1 class="page-header__title">{{ t('reports_title') }}</h1>
+    <div class="page-header__sub">{{ t('reports_sub') }}</div>
   </div>
 </div>
 
@@ -16,19 +16,19 @@
   <!-- Filter Controls -->
   <form class="filter-bar" method="get" action="{{ url_for('admin.reports') }}">
     <div class="field">
-      <label class="field__label">من تاريخ</label>
+      <label class="field__label">{{ t('from_date') }}</label>
       <input class="field__input" type="date" name="date_from" value="{{ date_from.isoformat() }}">
     </div>
 
     <div class="field">
-      <label class="field__label">إلى تاريخ</label>
+      <label class="field__label">{{ t('to_date') }}</label>
       <input class="field__input" type="date" name="date_to" value="{{ date_to.isoformat() }}">
     </div>
 
     <div class="field">
-      <label class="field__label">المقر / الفرع</label>
+      <label class="field__label">{{ t('col_zone') }}</label>
       <select class="field__input" name="zone_id">
-        <option value="">جميع المقرات</option>
+        <option value="">{{ t('all_zones') }}</option>
         {% for zone in zones %}
           <option value="{{ zone.id }}" {% if filters.zone_id == zone.id %}selected{% endif %}>{{ zone.name }}</option>
         {% endfor %}
@@ -36,102 +36,125 @@
     </div>
 
     <div class="field">
-      <label class="field__label">حالة الشفت</label>
+      <label class="field__label">{{ t('col_status') }}</label>
       <select class="field__input" name="status">
-        <option value="">جميع الحالات</option>
-        <option value="full_shift" {% if filters.status == 'full_shift' %}selected{% endif %}>شفت كامل</option>
-        <option value="short_shift" {% if filters.status == 'short_shift' %}selected{% endif %}>شفت غير كامل</option>
-        <option value="active" {% if filters.status == 'active' %}selected{% endif %}>حاضر الآن (قيد التسجيل)</option>
+        <option value="">{{ t('all_statuses') }}</option>
+        <option value="full_shift" {% if filters.status == 'full_shift' %}selected{% endif %}>{{ t('badge_full_shift') }}</option>
+        <option value="short_shift" {% if filters.status == 'short_shift' %}selected{% endif %}>{{ t('badge_short_shift') }}</option>
+        <option value="active" {% if filters.status == 'active' %}selected{% endif %}>{{ t('badge_active') }} ({{ t('in_progress') }})</option>
       </select>
     </div>
 
     <div class="field">
-      <label class="field__label">الموظف</label>
+      <label class="field__label">{{ t('col_employee') }}</label>
       <select class="field__input" name="employee_id">
-        <option value="">جميع الموظفين</option>
+        <option value="">{{ t('all') }}</option>
         {% for emp in employees %}
           <option value="{{ emp.id }}" {% if filters.employee_id == emp.id %}selected{% endif %}>{{ emp.name }}</option>
         {% endfor %}
       </select>
     </div>
 
-    <div style="display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;">
-      <button class="btn btn--primary" type="submit">تطبيق الفلاتر</button>
-      <button class="btn btn--secondary" type="submit" name="export" value="excel" style="background:#16a34a; color:#fff; border:none; display:inline-flex; align-items:center; gap:6px;">
+    <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+      <button class="btn btn--primary" type="submit">{{ t('filter') }}</button>
+      <button class="btn btn--success" type="submit" name="export" value="excel">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-        تصدير Excel (.xlsx)
+        {{ t('export_excel') }}
       </button>
-      <button class="btn btn--secondary" type="submit" name="export" value="csv" style="background:#059669; color:#fff; border:none; display:inline-flex; align-items:center; gap:6px;">
+      <button class="btn btn--outline-primary" type="submit" name="export" value="csv">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        تصدير CSV
+        {{ t('export_csv') }}
       </button>
       {% if filters.zone_id or filters.status or filters.employee_id %}
-        <a class="btn btn--secondary" href="{{ url_for('admin.reports') }}">إعادة تعيين</a>
+        <a class="btn btn--secondary" href="{{ url_for('admin.reports') }}">{{ t('reset') }}</a>
       {% endif %}
     </div>
   </form>
 
-  <!-- Summary Cards Row -->
+  <!-- Summary Cards Row with Icons and Color Accents -->
   {% set total_r = rows|length %}
   {% set full_r = rows | selectattr('shift_status', 'equalto', 'full_shift') | list | length %}
   {% set short_r = rows | selectattr('shift_status', 'equalto', 'short_shift') | list | length %}
   {% set late_r = rows | selectattr('is_late', 'equalto', true) | list | length %}
   <div class="report-summary-grid">
     <div class="report-summary-card">
-      <div class="report-summary-card__label">إجمالي التقرير</div>
-      <div class="report-summary-card__value">{{ total_r }}</div>
+      <div class="report-summary-card__icon" style="background:var(--primary-light); color:var(--primary-dark);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      </div>
+      <div>
+        <div class="report-summary-card__label">{{ t('report_total') }}</div>
+        <div class="report-summary-card__value">{{ total_r }}</div>
+      </div>
     </div>
     <div class="report-summary-card report-summary-card--ok">
-      <div class="report-summary-card__label">شفت كامل</div>
-      <div class="report-summary-card__value">{{ full_r }}</div>
+      <div class="report-summary-card__icon" style="background:var(--ok-bg); color:var(--ok-dark);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      </div>
+      <div>
+        <div class="report-summary-card__label">{{ t('kpi_full_shift') }}</div>
+        <div class="report-summary-card__value" style="color:var(--ok);">{{ full_r }}</div>
+      </div>
     </div>
     <div class="report-summary-card report-summary-card--warn">
-      <div class="report-summary-card__label">شفت غير كامل</div>
-      <div class="report-summary-card__value">{{ short_r }}</div>
+      <div class="report-summary-card__icon" style="background:var(--warn-bg); color:var(--warn-dark);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      <div>
+        <div class="report-summary-card__label">{{ t('kpi_short_shift') }}</div>
+        <div class="report-summary-card__value" style="color:var(--warn);">{{ short_r }}</div>
+      </div>
     </div>
     <div class="report-summary-card report-summary-card--danger">
-      <div class="report-summary-card__label">المتأخرون</div>
-      <div class="report-summary-card__value">{{ late_r }}</div>
+      <div class="report-summary-card__icon" style="background:var(--danger-bg); color:var(--danger-dark);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </div>
+      <div>
+        <div class="report-summary-card__label">{{ t('report_late_count') }}</div>
+        <div class="report-summary-card__value" style="color:var(--danger);">{{ late_r }}</div>
+      </div>
     </div>
   </div>
 
   <!-- Attendance Table -->
   <div class="panel__header">
-    <h3 class="panel__title">تفاصيل الحضور اليومي</h3>
+    <h3 class="panel__title">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      {{ t('report_details') }}
+    </h3>
   </div>
   <div class="table-card" style="border:none; box-shadow:none;">
     {% if rows %}
     <table class="table admin-table--mobile-cards">
       <thead>
         <tr>
-          <th>#</th>
-          <th>التاريخ</th>
-          <th>اسم الموظف</th>
-          <th>الفرع</th>
-          <th>وقت الحضور</th>
-          <th>وقت الانصراف</th>
-          <th>التأخير (دقيقة)</th>
-          <th>إجمالي الساعات</th>
-          <th>الحالة</th>
+          <th>{{ t('col_num') }}</th>
+          <th>{{ t('date') }}</th>
+          <th>{{ t('col_employee') }}</th>
+          <th>{{ t('col_zone') }}</th>
+          <th>{{ t('col_sign_in') }}</th>
+          <th>{{ t('col_sign_out') }}</th>
+          <th>{{ t('col_late') }}</th>
+          <th>{{ t('col_total_hours') }}</th>
+          <th>{{ t('col_status') }}</th>
         </tr>
       </thead>
       <tbody>
         {% for row in rows %}
         <tr>
-          <td data-label="#">{{ loop.index }}</td>
-          <td data-label="التاريخ" style="font-family:var(--font-mono); font-size:13px;">{{ row.date.strftime('%Y-%m-%d') }}</td>
-          <td data-label="الموظف" style="font-weight:600;">{{ row.user.name }}</td>
-          <td data-label="الفرع">{{ row.zone.name }}</td>
-          <td data-label="الحضور">{{ row.sign_in_time|cairo_time }}</td>
-          <td data-label="الانصراف">{{ row.sign_out_time|cairo_time if row.sign_out_time else '—' }}</td>
-          <td data-label="التأخير">
+          <td>{{ loop.index }}</td>
+          <td style="font-family:var(--font-mono); font-size:13px;">{{ row.date.strftime('%Y-%m-%d') }}</td>
+          <td style="font-weight:700;">{{ row.user.name }}</td>
+          <td>{{ row.zone.name }}</td>
+          <td>{{ row.sign_in_time|cairo_time }}</td>
+          <td>{{ row.sign_out_time|cairo_time if row.sign_out_time else '—' }}</td>
+          <td>
             {% if row.is_late %}
-              <span class="badge badge--danger">{{ row.late_minutes }}m</span>
+              <span class="badge badge--danger"><span class="badge__dot"></span>{{ row.late_minutes }}m</span>
             {% else %}
-              <span class="badge badge--ok">0m</span>
+              <span class="badge badge--ok"><span class="badge__dot"></span>0m</span>
             {% endif %}
           </td>
-          <td data-label="إجمالي">
+          <td>
             {% if row.total_hours is not none %}
               {% set h = row.total_hours|int %}
               {% set m = ((row.total_hours - h) * 60)|round|int %}
@@ -140,22 +163,22 @@
               —
             {% endif %}
           </td>
-          <td data-label="الحالة">
+          <td>
             {% if row.status == 'active' %}
-              <span class="badge badge--info"><span class="badge__dot"></span>Active</span>
+              <span class="badge badge--info"><span class="badge__dot"></span>{{ t('badge_active') }}</span>
             {% elif row.shift_status == 'full_shift' %}
               {% if row.is_late %}
-                <span class="badge badge--ok"><span class="badge__dot"></span>Full Shift</span>
-                <span class="badge badge--danger" style="margin-right:4px;">Late</span>
+                <span class="badge badge--ok"><span class="badge__dot"></span>{{ t('badge_full_shift') }}</span>
+                <span class="badge badge--danger" style="margin-inline-start:4px;"><span class="badge__dot"></span>{{ t('badge_late') }}</span>
               {% else %}
-                <span class="badge badge--ok"><span class="badge__dot"></span>Full Shift</span>
+                <span class="badge badge--ok"><span class="badge__dot"></span>{{ t('badge_full_shift') }}</span>
               {% endif %}
             {% elif row.shift_status == 'short_shift' %}
               {% if row.is_late %}
-                <span class="badge badge--warn"><span class="badge__dot"></span>Short Shift</span>
-                <span class="badge badge--danger" style="margin-right:4px;">Late</span>
+                <span class="badge badge--warn"><span class="badge__dot"></span>{{ t('badge_short_shift') }}</span>
+                <span class="badge badge--danger" style="margin-inline-start:4px;"><span class="badge__dot"></span>{{ t('badge_late') }}</span>
               {% else %}
-                <span class="badge badge--warn"><span class="badge__dot"></span>Short Shift</span>
+                <span class="badge badge--warn"><span class="badge__dot"></span>{{ t('badge_short_shift') }}</span>
               {% endif %}
             {% endif %}
           </td>
@@ -164,7 +187,13 @@
       </tbody>
     </table>
     {% else %}
-    <div class="table-empty">لا توجد تسجيلات حضور مطابقة لهذا البحث.</div>
+    <div class="empty-state">
+      <div class="empty-state__icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      </div>
+      <div class="empty-state__title">{{ t('no_records_title') }}</div>
+      <div class="empty-state__hint">{{ t('no_records_hint') }}</div>
+    </div>
     {% endif %}
   </div>
 </section>
