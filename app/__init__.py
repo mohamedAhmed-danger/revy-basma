@@ -1,11 +1,11 @@
 import os
-from datetime import timezone, date
+from datetime import timezone, date, datetime
 from zoneinfo import ZoneInfo
 from flask import Flask, render_template
 from app.config import Config
 from app.extensions import db, migrate, login_manager
 from app.models import User
-from app.i18n import t, get_current_lang, format_localized_date
+from app.i18n import t, get_current_lang, format_localized_date, format_work_days_short, WEEKDAY_OPTIONS
 
 CAIRO_TZ = ZoneInfo("Africa/Cairo")
 
@@ -28,7 +28,10 @@ def create_app(config_object=Config):
 
     @login_manager.user_loader
     def load_user(user_id):
-        return User.query.get(int(user_id))
+        user = User.query.get(int(user_id))
+        # SEC-04: returning None forces Flask-Login to log out deactivated accounts
+        # immediately on the next request, without waiting for the session to expire.
+        return user if (user and user.is_active) else None
 
     from app.routes.main import main_bp
     from app.routes.auth import auth_bp
@@ -45,14 +48,21 @@ def create_app(config_object=Config):
         lang = get_current_lang()
         is_rtl = (lang == 'ar')
         dir_attr = 'rtl' if is_rtl else 'ltr'
+        cairo_today = datetime.now(CAIRO_TZ).date()
         return {
             'current_lang': lang,
             'is_rtl': is_rtl,
             'dir_attr': dir_attr,
             't': t,
             '_': t,
-            'today_display': format_localized_date(date.today(), lang)
+            'today_display': format_localized_date(cairo_today, lang),
+            'format_work_days': format_work_days_short,
+            'weekday_options': WEEKDAY_OPTIONS,
         }
+
+    @app.template_filter('format_work_days')
+    def format_work_days_filter(val):
+        return format_work_days_short(val)
 
     @app.template_filter('t')
     def translate_filter(key, **kwargs):

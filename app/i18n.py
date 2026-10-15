@@ -7,6 +7,7 @@ from flask import session, request
 from datetime import date
 
 AR_WEEKDAYS = ['الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد']
+AR_WEEKDAYS_SHORT = ['إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت', 'أحد']
 AR_MONTHS = [
     'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
     'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
@@ -17,6 +18,17 @@ EN_WEEKDAYS_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 EN_MONTHS = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
+]
+
+# Weekday checkboxes and listings ordered Sat, Sun, Mon, Tue, Wed, Thu, Fri (5, 6, 0, 1, 2, 3, 4)
+WEEKDAY_OPTIONS = [
+    {'day': 5, 'name_key': 'weekday_sat', 'short_key': 'weekday_sat_short'},
+    {'day': 6, 'name_key': 'weekday_sun', 'short_key': 'weekday_sun_short'},
+    {'day': 0, 'name_key': 'weekday_mon', 'short_key': 'weekday_mon_short'},
+    {'day': 1, 'name_key': 'weekday_tue', 'short_key': 'weekday_tue_short'},
+    {'day': 2, 'name_key': 'weekday_wed', 'short_key': 'weekday_wed_short'},
+    {'day': 3, 'name_key': 'weekday_thu', 'short_key': 'weekday_thu_short'},
+    {'day': 4, 'name_key': 'weekday_fri', 'short_key': 'weekday_fri_short'},
 ]
 
 TRANSLATIONS = {
@@ -66,10 +78,28 @@ TRANSLATIONS = {
     "employees_sub": {"ar": "عرض وإضافة وتعديل بيانات الموظفين وإدارة الأجهزة المسجلة", "en": "View, add, and manage employee accounts and registered biometric devices"},
     "emp_suspended": {"ar": "موقف", "en": "Suspended"},
     "reset_device": {"ar": "إعادة ضبط البصمة", "en": "Reset Biometric"},
+    "working_days": {"ar": "أيام العمل", "en": "Working Days"},
+    "working_days_help": {"ar": "تعديل أيام عمل الموظف ينطبق أيضاً على تقارير الفترات السابقة.", "en": "Changing an employee's work days also applies to past reports."},
+    "weekday_sat": {"ar": "السبت", "en": "Saturday"},
+    "weekday_sun": {"ar": "الأحد", "en": "Sunday"},
+    "weekday_mon": {"ar": "الإثنين", "en": "Monday"},
+    "weekday_tue": {"ar": "الثلاثاء", "en": "Tuesday"},
+    "weekday_wed": {"ar": "الأربعاء", "en": "Wednesday"},
+    "weekday_thu": {"ar": "الخميس", "en": "Thursday"},
+    "weekday_fri": {"ar": "الجمعة", "en": "Friday"},
+    "weekday_sat_short": {"ar": "سبت", "en": "Sat"},
+    "weekday_sun_short": {"ar": "أحد", "en": "Sun"},
+    "weekday_mon_short": {"ar": "إثنين", "en": "Mon"},
+    "weekday_tue_short": {"ar": "ثلاثاء", "en": "Tue"},
+    "weekday_wed_short": {"ar": "أربعاء", "en": "Wed"},
+    "weekday_thu_short": {"ar": "خميس", "en": "Thu"},
+    "weekday_fri_short": {"ar": "جمعة", "en": "Fri"},
     # Confirm dialog strings
     "confirm_delete_employee": {"ar": "تأكيد حذف الموظف", "en": "Confirm deleting employee"},
     "confirm_reset_devices": {"ar": "تأكيد إعادة ضبط وحذف الأجهزة المسجلة للموظف", "en": "Confirm resetting registered devices for employee"},
     "confirm_delete_shift": {"ar": "تأكيد حذف الشفت؟", "en": "Confirm deleting this shift?"},
+    "confirm_close_attendance": {"ar": "هل أنت متأكد من رغبتك في إغلاق سجل الحضور هذا يدوياً؟", "en": "Are you sure you want to manually close this attendance record?"},
+    "btn_close_attendance": {"ar": "إغلاق الانصراف", "en": "Close Attendance"},
     # Shift page
     "add_shift": {"ar": "+ إضافة شفت جديد", "en": "+ Add Shift"},
     "shifts_sub": {"ar": "إدارة جداول وأوقات الشفتات المختلفة للموظفين", "en": "Manage employee shift schedules and sign-in windows"},
@@ -141,6 +171,12 @@ TRANSLATIONS = {
     "all_statuses": {"ar": "جميع الحالات", "en": "All Statuses"},
     "in_progress": {"ar": "قيد التسجيل", "en": "In Progress"},
     "absent": {"ar": "غائب", "en": "Absent"},
+    "kpi_scheduled_today": {"ar": "مجدولون اليوم", "en": "Scheduled Today"},
+    "kpi_pending_today": {"ar": "بانتظار الحضور اليوم", "en": "Pending Today"},
+    "kpi_extra_today": {"ar": "حاضرون في عطلة", "en": "Day-off Present"},
+    "scheduled_today": {"ar": "مجدولون اليوم", "en": "Scheduled Today"},
+    "pending": {"ar": "بانتظار الحضور", "en": "Pending"},
+    "extra_present": {"ar": "حضور عطلة", "en": "Extra (Day Off)"},
 
     # Table Headers
     "col_num": {"ar": "#", "en": "#"},
@@ -219,6 +255,18 @@ TRANSLATIONS = {
     "shift_schedule": {"ar": "مواعيد الشفت", "en": "Shift Schedule"},
     "confirm_sign_out_title": {"ar": "تأكيد تسجيل الانصراف؟", "en": "Confirm Sign Out?"},
     "expected_status": {"ar": "الحالة المتوقعة", "en": "Expected Status"},
+    "status_today_workday": {"ar": "اليوم يوم عمل رسمي", "en": "Today is a work day"},
+    "status_today_day_off": {"ar": "اليوم يوم عطلتك الأسبوعية", "en": "Today is your day off"},
+    "day_off_signin_note": {"ar": "تسجيل الحضور متاح اليوم، وسيتم توثيقه كيوم عمل إضافي في رصيدك.", "en": "Signing in is available today and will be recorded as an extra day worked."},
+    "my_schedule_title": {"ar": "جدول مواعيدي الأسبوعي", "en": "My Weekly Schedule"},
+    "month_attendance_progress": {"ar": "حضور الشهر الحالي", "en": "This Month's Progress"},
+    "badge_today": {"ar": "اليوم", "en": "Today"},
+    "badge_workday": {"ar": "يوم عمل", "en": "Work"},
+    "badge_day_off": {"ar": "عطلة", "en": "Off"},
+    "days_attended_of_expected": {"ar": "{attended} من {expected} يوم متوقع", "en": "{attended} of {expected} expected days"},
+    "btn_check_in_extra": {"ar": "تسجيل حضور إضافي (عطلة)", "en": "Biometric Check In (Day Off)"},
+    "shift_window_time": {"ar": "فترة السماح بالحضور", "en": "Sign-in Window"},
+
     
     # Reports Page
     "reports_title": {"ar": "التقارير وسجل الحضور", "en": "Attendance Reports"},
@@ -228,6 +276,14 @@ TRANSLATIONS = {
     "report_total": {"ar": "إجمالي السجلات", "en": "Total Records"},
     "report_late_count": {"ar": "حالات التأخير", "en": "Late Count"},
     "report_details": {"ar": "تفاصيل سجلات الحضور", "en": "Attendance Details"},
+    "extra_days": {"ar": "أيام عمل العطلة", "en": "Days Off Worked"},
+    "days_off_worked": {"ar": "أيام عمل العطلة", "en": "Days Off Worked"},
+    "absent_days": {"ar": "أيام الغياب", "en": "Absent Days"},
+    "attendance_rate": {"ar": "نسبة الحضور", "en": "Attendance Rate"},
+    "expected_days": {"ar": "الأيام المتوقعة", "en": "Expected Days"},
+    "attended_days": {"ar": "أيام الحضور", "en": "Attended Days"},
+    "no_absent_days": {"ar": "لا يوجد غياب", "en": "None"},
+    "no_extra_days": {"ar": "لا يوجد", "en": "None"},
     
     # Settings Page
     "settings_title": {"ar": "إعدادات النظام", "en": "System Settings"},
@@ -276,9 +332,14 @@ TRANSLATIONS = {
     "flash_employee_deleted":       {"ar": "تم حذف الموظف بنجاح", "en": "Employee deleted successfully"},
     "flash_employee_admin_edit":    {"ar": "لا يمكن تعديل بيانات المدير من هذه الصفحة", "en": "Admin account cannot be edited from this page"},
     "flash_devices_reset":          {"ar": "تم إزالة الأجهزة المسجلة للموظف بنجاح، ويمكنه الآن تسجيل جهاز جديد", "en": "Registered devices removed successfully. The employee can now enroll a new device"},
+    "flash_work_days_required":     {"ar": "يجب اختيار يوم عمل واحد على الأقل للموظف", "en": "At least one working day must be selected for the employee"},
+    "flash_work_days_invalid":      {"ar": "أيام العمل المحددة غير صالحة", "en": "Selected working days are invalid"},
 
     # Admin — Settings
     "flash_settings_saved":         {"ar": "تم حفظ إعدادات النظام بنجاح", "en": "System settings saved successfully"},
+    "flash_settings_read_only":     {"ar": "الإعدادات للعرض فقط في هذا الإصدار ولا يتم حفظ التعديلات حالياً.", "en": "Settings are display-only in this version; changes are not persisted."},
+    "flash_attendance_closed":      {"ar": "تم إغلاق سجل الحضور واحتساب ساعات العمل بنجاح.", "en": "Attendance record closed and work hours calculated successfully."},
+    "flash_attendance_close_error": {"ar": "تعذر إغلاق سجل الحضور.", "en": "Failed to close attendance record."},
 
     # Auth — Login
     "flash_login_invalid":          {"ar": "اسم المستخدم أو كلمة المرور غلط", "en": "Invalid username or password"},
@@ -307,6 +368,11 @@ TRANSLATIONS = {
     "export_col_shift_status":  {"ar": "حالة الشفت", "en": "Shift Status"},
     "export_col_late":          {"ar": "التأخير", "en": "Late"},
     "export_col_late_minutes":  {"ar": "دقائق التأخير", "en": "Late Minutes"},
+    "export_col_expected_days": {"ar": "الأيام المتوقعة", "en": "Expected Days"},
+    "export_col_attended_days": {"ar": "أيام الحضور", "en": "Attended Days"},
+    "export_col_absent_days":   {"ar": "أيام الغياب", "en": "Absent Days"},
+    "export_col_extra_days":    {"ar": "حضور أيام العطلة", "en": "Days Off Worked"},
+    "export_col_attendance_rate": {"ar": "نسبة الحضور", "en": "Attendance Rate"},
     "export_status_full":       {"ar": "شفت كامل", "en": "Full Shift"},
     "export_status_short":      {"ar": "شفت غير كامل", "en": "Short Shift"},
     "export_status_active":     {"ar": "قيد العمل", "en": "In Progress"},
@@ -356,3 +422,31 @@ def format_localized_date(d=None, lang=None):
     if lang == 'en':
         return f"{EN_WEEKDAYS[d.weekday()]}, {d.day} {EN_MONTHS[d.month - 1]} {d.year}"
     return f"{AR_WEEKDAYS[d.weekday()]}، {d.day} {AR_MONTHS[d.month - 1]} {d.year}"
+
+
+def format_work_days_short(work_days_val, lang=None):
+    """Returns localized short weekday names in Sat..Fri order (e.g. 'سبت، أحد، إثنين' or 'Sat, Sun, Mon')."""
+    if not lang:
+        lang = get_current_lang()
+    if hasattr(work_days_val, 'work_days_list'):
+        days_list = work_days_val.work_days_list
+    elif isinstance(work_days_val, str):
+        try:
+            days_list = [int(x.strip()) for x in work_days_val.split(',') if x.strip() != '']
+        except ValueError:
+            days_list = []
+    elif isinstance(work_days_val, (list, set, tuple)):
+        days_list = [int(x) for x in work_days_val]
+    else:
+        days_list = []
+
+    short_names = []
+    for opt in WEEKDAY_OPTIONS:
+        if opt['day'] in days_list:
+            if lang == 'en':
+                short_names.append(EN_WEEKDAYS_SHORT[opt['day']])
+            else:
+                short_names.append(AR_WEEKDAYS_SHORT[opt['day']])
+    sep = ', ' if lang == 'en' else '، '
+    return sep.join(short_names) if short_names else '—'
+

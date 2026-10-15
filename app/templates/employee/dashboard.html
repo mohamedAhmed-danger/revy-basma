@@ -16,6 +16,17 @@ if (location.protocol !== 'https:' && location.hostname !== 'localhost' && locat
 }
 </script>
 
+<!-- Today Workday / Day Off Status Banner -->
+<div class="schedule-status-banner {{ 'schedule-status-banner--work' if is_today_workday else 'schedule-status-banner--off' }}">
+  {% if is_today_workday %}
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    <span>{{ t('status_today_workday') }}</span>
+  {% else %}
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>
+    <span>{{ t('status_today_day_off') }}</span>
+  {% endif %}
+</div>
+
 <!-- 1. Location Card -->
 <div class="emp-card {{ 'emp-card--ok' if live_status and live_status.inside else ('emp-card--danger' if live_status and not live_status.inside else '') }}">
   <div class="emp-card__title">
@@ -203,7 +214,7 @@ if (location.protocol !== 'https:' && location.hostname !== 'localhost' && locat
           {{ t('early_window_alert_title') }}
         </h4>
         <p style="font-size:13px; color:var(--text-main);">
-          {{ shift.shift_start_time.strftime('%H:%M') }} AM
+          {{ shift.shift_start_time.strftime('%I:%M %p') }}
         </p>
       </div>
       <button type="button" class="btn btn--secondary btn--xl btn--block" style="opacity:0.6; cursor:not-allowed;" disabled>
@@ -218,7 +229,7 @@ if (location.protocol !== 'https:' && location.hostname !== 'localhost' && locat
           {{ t('expired_window_alert_title') }}
         </h4>
         <p style="font-size:13px; color:var(--text-main);">
-          {{ shift.sign_in_end_time.strftime('%H:%M') }} AM
+          {{ shift.sign_in_end_time.strftime('%I:%M %p') }}
         </p>
       </div>
       <button type="button" class="btn btn--secondary btn--xl btn--block" style="opacity:0.6; cursor:not-allowed;" disabled>
@@ -239,19 +250,34 @@ if (location.protocol !== 'https:' && location.hostname !== 'localhost' && locat
         </div>
       {% endif %}
 
+      {% if not is_today_workday %}
+        <div class="day-off-notice">
+          <svg class="day-off-notice__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span>{{ t('day_off_signin_note') }}</span>
+        </div>
+      {% endif %}
+
       {% if has_webauthn %}
         <form id="sign-in-form" method="POST" action="{{ url_for('employee.sign_in_route') }}">
           <input type="hidden" id="sign-in-lat" name="lat">
           <input type="hidden" id="sign-in-lng" name="lng">
           <input type="hidden" id="sign-in-credential" name="webauthn_credential">
 
-          <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">
-            {{ t('brand_tagline') }}
-          </p>
+          {% if is_today_workday %}
+            <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">
+              {{ t('brand_tagline') }}
+            </p>
+          {% endif %}
 
-          <button type="button" id="sign-in-btn" class="btn btn--primary btn--xl btn--block" onclick="submitSignIn()">
+          <button type="button" id="sign-in-btn" class="btn {{ 'btn--day-off' if not is_today_workday else 'btn--primary' }} btn--xl btn--block" onclick="submitSignIn()">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-            {% if window_status == 'late' %}{{ t('btn_check_in_late') }}{% else %}{{ t('btn_check_in') }}{% endif %}
+            {% if not is_today_workday %}
+              {{ t('btn_check_in_extra') }}
+            {% elif window_status == 'late' %}
+              {{ t('btn_check_in_late') }}
+            {% else %}
+              {{ t('btn_check_in') }}
+            {% endif %}
           </button>
           <p id="sign-in-status" class="field__label" style="text-align:center; margin-top:8px;"></p>
         </form>
@@ -267,28 +293,74 @@ if (location.protocol !== 'https:' && location.hostname !== 'localhost' && locat
 
 {% endif %}
 
-<!-- 3. Shift Schedule Details Card -->
-{% if shift %}
+<!-- 3. My Schedule & Working Days Strip Card -->
 <div class="emp-card">
   <div class="emp-card__title">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--primary);"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-    <span>{{ t('shift_schedule') }} — {{ shift.name }}</span>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--primary);"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span>{{ t('my_schedule_title') }}{% if shift %} — {{ shift.name }}{% endif %}</span>
+    </div>
   </div>
-  <div class="schedule-row">
-    <span class="schedule-row__label">{{ t('col_start_time') }}</span>
-    <span class="schedule-row__value">{{ shift.shift_start_time.strftime('%H:%M') }} AM</span>
+
+  <div class="schedule-strip">
+    {% for opt in weekday_options %}
+      {% set is_day_today = (opt.day == cairo_today.weekday()) %}
+      {% set is_emp_workday = (opt.day in current_user.work_days_list) %}
+      <div class="schedule-day {{ 'schedule-day--today' if is_day_today else '' }} {{ 'schedule-day--work' if is_emp_workday else 'schedule-day--off' }}">
+        <span class="schedule-day__name">{{ t(opt.short_key) }}</span>
+        <span class="schedule-day__badge">
+          {% if is_emp_workday %}{{ t('badge_workday') }}{% else %}{{ t('badge_day_off') }}{% endif %}
+        </span>
+        {% if is_day_today %}
+          <span class="schedule-day__today-indicator">{{ t('badge_today') }}</span>
+        {% endif %}
+      </div>
+    {% endfor %}
   </div>
-  <div class="schedule-row">
-    <span class="schedule-row__label">{{ t('col_sign_in_end') }}</span>
-    <span class="schedule-row__value">{{ shift.sign_in_end_time.strftime('%H:%M') }} AM</span>
+
+  {% if shift %}
+    <div class="schedule-time-row">
+      <span class="schedule-time-row__label">{{ t('shift_window_time') }}</span>
+      <span class="schedule-time-row__value">{{ shift.shift_start_time.strftime('%I:%M %p') }} – {{ shift.sign_in_end_time.strftime('%I:%M %p') }}</span>
+    </div>
+    <div class="schedule-time-row">
+      <span class="schedule-time-row__label">{{ t('col_grace_period') }}</span>
+      <span class="schedule-time-row__value">{{ shift.grace_period_minutes }} {{ t('minutes') if t('minutes') != 'minutes' else 'min' }}</span>
+    </div>
+    <div class="schedule-time-row">
+      <span class="schedule-time-row__label">{{ t('col_min_hours') }}</span>
+      <span class="schedule-time-row__value">{{ shift.min_full_shift_hours }} {{ t('hours') if t('hours') != 'hours' else 'hrs' }}</span>
+    </div>
+  {% else %}
+    <div class="schedule-time-row">
+      <span class="schedule-time-row__label">{{ t('col_shift') }}</span>
+      <span class="schedule-time-row__value">{{ t('unassigned') }}</span>
+    </div>
+  {% endif %}
+</div>
+
+<!-- 4. Monthly Attendance Progress Card -->
+{% if month_summary %}
+<div class="emp-card">
+  <div class="month-progress-header">
+    <div class="emp-card__title" style="margin-bottom:0;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--primary);"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+      <span>{{ t('month_attendance_progress') }}</span>
+    </div>
+    <span class="badge badge--ok">{{ month_summary.attendance_rate }}%</span>
   </div>
-  <div class="schedule-row">
-    <span class="schedule-row__label">{{ t('col_grace_period') }}</span>
-    <span class="schedule-row__value">{{ shift.grace_period_minutes }} {{ t('minutes') if t('minutes') != 'minutes' else 'min' }}</span>
+
+  <div class="progress-track" style="margin-top:10px;">
+    {% set pct = month_summary.attendance_rate if month_summary.attendance_rate <= 100 else 100 %}
+    <div class="progress-track__fill" style="width: {{ pct }}%;"></div>
   </div>
-  <div class="schedule-row">
-    <span class="schedule-row__label">{{ t('col_min_hours') }}</span>
-    <span class="schedule-row__value">{{ shift.min_full_shift_hours }} {{ t('hours') if t('hours') != 'hours' else 'hrs' }}</span>
+  <div class="progress-meta">
+    <span class="month-progress-stat">
+      {{ t('days_attended_of_expected', attended=month_summary.attended_days, expected=month_summary.expected_days) }}
+    </span>
+    {% if month_summary.extra_days %}
+      <span class="badge badge--info">+{{ month_summary.extra_days|length }} {{ t('extra_days') }}</span>
+    {% endif %}
   </div>
 </div>
 {% endif %}

@@ -73,17 +73,15 @@
 
   <!-- Summary Cards Row with Icons and Color Accents -->
   {% set total_r = rows|length %}
-  {% set full_r = rows | selectattr('shift_status', 'equalto', 'full_shift') | list | length %}
-  {% set short_r = rows | selectattr('shift_status', 'equalto', 'short_shift') | list | length %}
   {% set late_r = rows | selectattr('is_late', 'equalto', true) | list | length %}
-  <div class="report-summary-grid">
+  <div class="report-summary-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
     <div class="report-summary-card">
       <div class="report-summary-card__icon" style="background:var(--primary-light); color:var(--primary-dark);">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
       </div>
       <div>
-        <div class="report-summary-card__label">{{ t('report_total') }}</div>
-        <div class="report-summary-card__value">{{ total_r }}</div>
+        <div class="report-summary-card__label">{{ t('expected_days') }}</div>
+        <div class="report-summary-card__value">{{ summary_stats.expected_days if summary_stats else total_r }}</div>
       </div>
     </div>
     <div class="report-summary-card report-summary-card--ok">
@@ -91,26 +89,44 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
       </div>
       <div>
-        <div class="report-summary-card__label">{{ t('kpi_full_shift') }}</div>
-        <div class="report-summary-card__value" style="color:var(--ok);">{{ full_r }}</div>
-      </div>
-    </div>
-    <div class="report-summary-card report-summary-card--warn">
-      <div class="report-summary-card__icon" style="background:var(--warn-bg); color:var(--warn-dark);">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      </div>
-      <div>
-        <div class="report-summary-card__label">{{ t('kpi_short_shift') }}</div>
-        <div class="report-summary-card__value" style="color:var(--warn);">{{ short_r }}</div>
+        <div class="report-summary-card__label">{{ t('attended_days') }}</div>
+        <div class="report-summary-card__value" style="color:var(--ok);">{{ summary_stats.attended_days if summary_stats else total_r }}</div>
       </div>
     </div>
     <div class="report-summary-card report-summary-card--danger">
       <div class="report-summary-card__icon" style="background:var(--danger-bg); color:var(--danger-dark);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+      </div>
+      <div>
+        <div class="report-summary-card__label">{{ t('absent_days') }}</div>
+        <div class="report-summary-card__value" style="color:var(--danger);">{{ summary_stats.absent_days_count if summary_stats else 0 }}</div>
+      </div>
+    </div>
+    <div class="report-summary-card" style="border-inline-start: 4px solid #8B5CF6;">
+      <div class="report-summary-card__icon" style="background:#F3E8FF; color:#7C3AED;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      </div>
+      <div>
+        <div class="report-summary-card__label">{{ t('extra_days') }}</div>
+        <div class="report-summary-card__value" style="color:#7C3AED;">{{ summary_stats.extra_days_count if summary_stats else 0 }}</div>
+      </div>
+    </div>
+    <div class="report-summary-card report-summary-card--warn">
+      <div class="report-summary-card__icon" style="background:var(--warn-bg); color:var(--warn-dark);">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       </div>
       <div>
         <div class="report-summary-card__label">{{ t('report_late_count') }}</div>
-        <div class="report-summary-card__value" style="color:var(--danger);">{{ late_r }}</div>
+        <div class="report-summary-card__value" style="color:var(--warn);">{{ late_r }}</div>
+      </div>
+    </div>
+    <div class="report-summary-card" style="border-inline-start: 4px solid var(--primary);">
+      <div class="report-summary-card__icon" style="background:var(--primary-light); color:var(--primary);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+      </div>
+      <div>
+        <div class="report-summary-card__label">{{ t('attendance_rate') }}</div>
+        <div class="report-summary-card__value" style="color:var(--primary);">{{ summary_stats.attendance_rate if summary_stats else 100 }}%</div>
       </div>
     </div>
   </div>
@@ -122,7 +138,7 @@
       {{ t('report_details') }}
     </h3>
   </div>
-  <div class="table-card" style="border:none; box-shadow:none;">
+  <div class="table-card" style="border:none; box-shadow:none; overflow-x:auto;">
     {% if rows %}
     <table class="table admin-table--mobile-cards">
       <thead>
@@ -136,10 +152,14 @@
           <th>{{ t('col_late') }}</th>
           <th>{{ t('col_total_hours') }}</th>
           <th>{{ t('col_status') }}</th>
+          <th>{{ t('extra_days') }}</th>
+          <th>{{ t('absent_days') }}</th>
         </tr>
       </thead>
       <tbody>
         {% for row in rows %}
+        {% set is_extra = not row.user.is_workday(row.date) %}
+        {% set u_summary = user_summaries.get(row.user_id) if user_summaries else None %}
         <tr>
           <td>{{ loop.index }}</td>
           <td style="font-family:var(--font-mono); font-size:13px;">{{ row.date.strftime('%Y-%m-%d') }}</td>
@@ -180,6 +200,22 @@
               {% else %}
                 <span class="badge badge--warn"><span class="badge__dot"></span>{{ t('badge_short_shift') }}</span>
               {% endif %}
+            {% endif %}
+          </td>
+          <td>
+            {% if is_extra %}
+              <span class="badge" style="background:#F3E8FF; color:#7C3AED; font-weight:700;"><span class="badge__dot" style="background:#7C3AED;"></span>{{ t('extra_present') }}</span>
+            {% else %}
+              <span style="color:var(--text-muted); font-size:12px;">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if u_summary and u_summary.absent_days %}
+              <span class="badge badge--warn" title="{{ u_summary.absent_days|join(', ') }}">
+                <span class="badge__dot"></span>{{ u_summary.absent_days|length }} {{ t('absent_days') }} ({{ u_summary.attendance_rate }}%)
+              </span>
+            {% else %}
+              <span class="badge badge--ok"><span class="badge__dot"></span>0 ({{ u_summary.attendance_rate if u_summary else 100 }}%)</span>
             {% endif %}
           </td>
         </tr>

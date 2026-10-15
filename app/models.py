@@ -16,9 +16,24 @@ class User(UserMixin, db.Model):
     role = db.Column(db.Enum('admin', 'employee', name='user_role'), nullable=False, default='employee')
     is_active = db.Column(db.Boolean, nullable=False, default=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    work_days = db.Column(db.String(20), nullable=False, default='5,6,0,1,2,3', server_default='5,6,0,1,2,3')
 
     # relationships
     attendances = db.relationship('Attendance', backref='user', lazy=True)
+
+    @property
+    def work_days_list(self):
+        if not self.work_days:
+            return []
+        try:
+            return [int(x.strip()) for x in self.work_days.split(',') if x.strip() != '']
+        except ValueError:
+            return []
+
+    def is_workday(self, d):
+        if hasattr(d, 'weekday'):
+            return d.weekday() in self.work_days_list
+        return False
 
 
 class Zone(db.Model):
@@ -56,6 +71,9 @@ class ShiftSetting(db.Model):
 
 class Attendance(db.Model):
     __tablename__ = "attendance"
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'date', name='uq_attendance_user_date'),
+    )
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)

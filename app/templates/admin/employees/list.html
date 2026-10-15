@@ -36,6 +36,7 @@
           <th>{{ t('col_employee') }}</th>
           <th>{{ t('col_zone') }}</th>
           <th>{{ t('col_shift') }}</th>
+          <th>{{ t('working_days') }}</th>
           <th>{{ t('col_devices') }}</th>
           <th>{{ t('reg_date') }}</th>
           <th>{{ t('col_status') }}</th>
@@ -55,6 +56,9 @@
           </td>
           <td data-label="{{ t('col_zone') }}">{{ emp.zone.name if emp.zone else t('unassigned') }}</td>
           <td data-label="{{ t('col_shift') }}">{{ emp.shift_setting.name if emp.shift_setting else t('unassigned') }}</td>
+          <td data-label="{{ t('working_days') }}" style="font-size:12px; font-weight:600; color:var(--text-muted);">
+            {{ emp | format_work_days }}
+          </td>
           <td data-label="{{ t('col_devices') }}">
             {% if dev_count > 0 %}
               <span class="badge badge--ok">

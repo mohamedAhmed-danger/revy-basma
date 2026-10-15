@@ -1,10 +1,18 @@
-from datetime import date, timezone
+from datetime import date, datetime, timezone
+from zoneinfo import ZoneInfo
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from flask_login import login_required, current_user
 
 from app.models import Attendance
-from app.services.attendance_service import sign_in, sign_out, get_dashboard_context, get_history
+from app.services.attendance_service import (
+    sign_in,
+    sign_out,
+    get_dashboard_context,
+    get_history,
+    get_employee_attendance_summary,
+    CAIRO_TZ,
+)
 from app.services import webauthn_service
 
 employee_bp = Blueprint('employee', __name__, url_prefix='/employee')
@@ -13,8 +21,13 @@ employee_bp = Blueprint('employee', __name__, url_prefix='/employee')
 @employee_bp.route('/dashboard')
 @login_required
 def dashboard():
+    cairo_today = datetime.now(timezone.utc).astimezone(CAIRO_TZ).date()
+    is_today_workday = current_user.is_workday(cairo_today)
+    month_start = date(cairo_today.year, cairo_today.month, 1)
+    month_summary = get_employee_attendance_summary(current_user, month_start, cairo_today)
+
     today_attendance = Attendance.query.filter_by(
-        user_id=current_user.id, date=date.today()
+        user_id=current_user.id, date=cairo_today
     ).first()
 
     # Optional: the page auto-submits a plain GET form with lat/lng on load
@@ -70,6 +83,9 @@ def dashboard():
         has_webauthn=has_webauthn,
         webauthn_auth_options=webauthn_auth_options,
         sign_in_epoch_ms=sign_in_epoch_ms,
+        cairo_today=cairo_today,
+        is_today_workday=is_today_workday,
+        month_summary=month_summary,
         active_nav='home',
         **context,
     )

@@ -11,6 +11,7 @@ from openpyxl.utils import get_column_letter
 
 from app.models import User, Attendance
 from app.i18n import t
+from app.services.attendance_service import get_employee_attendance_summary
 
 CAIRO_TZ = ZoneInfo("Africa/Cairo")
 
@@ -25,10 +26,28 @@ def _to_cairo(value, fmt='%Y-%m-%d %I:%M %p'):
     return value.astimezone(CAIRO_TZ).strftime(fmt)
 
 
+def _sanitize_cell(value):
+    """SEC-19: Prevent CSV and Excel formula injection (CSV/formula injection).
+    If a cell starts with =, +, -, @, \\t, or \\r, prefix with a single quote
+    so spreadsheet software renders it as text rather than executing it as an expression.
+    """
+    if value is None:
+        return ''
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value
+    s = str(value)
+    if s and s[0] in ('=', '+', '-', '@', '\t', '\r'):
+        return "'" + s
+    return s
+
+
 def get_report(date_from, date_to, zone_id=None, status=None, employee_id=None):
     query = (
         Attendance.query
         .join(User, Attendance.user_id == User.id)
+        .filter(User.is_active == True, User.role == 'employee')
         .filter(Attendance.date >= date_from, Attendance.date <= date_to)
     )
 
@@ -58,7 +77,7 @@ def _get_status_text(shift_status, status_attr, lang='ar'):
     return ''
 
 
-def export_csv(rows, lang='ar'):
+def export_csv(rows, lang='ar', date_from=None, date_to=None):
     buffer = io.StringIO()
     writer = csv.writer(buffer)
     
@@ -72,23 +91,44 @@ def export_csv(rows, lang='ar'):
         t('export_col_shift_status', lang=lang),
         t('export_col_late', lang=lang),
         t('export_col_late_minutes', lang=lang),
+        t('export_col_extra_days', lang=lang),
+        t('export_col_absent_days', lang=lang),
+        t('export_col_attendance_rate', lang=lang),
     ]
     writer.writerow(headers)
 
     yes_text = t('export_yes', lang=lang)
     no_text = t('export_no', lang=lang)
+    start_d = date_from or (min(r.date for r in rows) if rows else date.today())
+    end_d = date_to or (max(r.date for r in rows) if rows else date.today())
+    user_summaries = {}
 
     for row in rows:
+        if row.user_id not in user_summaries:
+            user_summaries[row.user_id] = get_employee_attendance_summary(row.user, start_d, end_d)
+        summary = user_summaries[row.user_id]
+
+        is_day_off = not row.user.is_workday(row.date)
+        day_off_text = yes_text if is_day_off else no_text
+
+        absent_count = len(summary['absent_days'])
+        absent_dates_str = ', '.join(d.strftime('%Y-%m-%d') for d in summary['absent_days'])
+        absent_text = f"{absent_count} ({absent_dates_str})" if absent_count > 0 else t('no_absent_days', lang=lang)
+        rate_text = f"{summary['attendance_rate']}%"
+
         writer.writerow([
             row.date.isoformat(),
-            row.user.name,
-            row.zone.name if row.zone else '',
+            _sanitize_cell(row.user.name),
+            _sanitize_cell(row.zone.name if row.zone else ''),
             _to_cairo(row.sign_in_time),
             _to_cairo(row.sign_out_time),
             f'{row.total_hours:.1f}' if row.total_hours is not None else '',
             _get_status_text(row.shift_status, row.status, lang=lang),
             yes_text if row.is_late else no_text,
             row.late_minutes or 0,
+            day_off_text,
+            absent_text,
+            rate_text,
         ])
 
     # UTF-8 BOM so Excel opens Arabic CSV with correct encoding
@@ -106,7 +146,7 @@ def export_csv(rows, lang='ar'):
     )
 
 
-def export_excel(rows, lang='ar'):
+def export_excel(rows, lang='ar', date_from=None, date_to=None):
     """Generates a formatted Excel (.xlsx) file with RTL layout for Arabic,
     LTR layout for English, custom headers, status badge highlighting, and column width auto-fitting."""
     wb = openpyxl.Workbook()
@@ -149,7 +189,7 @@ def export_excel(rows, lang='ar'):
     )
 
     # Sheet Title Banner
-    ws.merge_cells('A1:I1')
+    ws.merge_cells('A1:L1')
     ws['A1'] = t('export_title_banner', lang=lang)
     ws['A1'].font = font_title
     ws['A1'].alignment = align_side
@@ -165,6 +205,9 @@ def export_excel(rows, lang='ar'):
         t('export_col_shift_status', lang=lang),
         t('export_col_late', lang=lang),
         t('export_col_late_minutes', lang=lang),
+        t('export_col_extra_days', lang=lang),
+        t('export_col_absent_days', lang=lang),
+        t('export_col_attendance_rate', lang=lang),
     ]
 
     ws.append([])  # Blank row 2
@@ -182,6 +225,9 @@ def export_excel(rows, lang='ar'):
     hours_suffix = t('export_hours_suffix', lang=lang)
     yes_text = t('export_yes', lang=lang)
     no_text = t('export_no', lang=lang)
+    start_d = date_from or (min(r.date for r in rows) if rows else date.today())
+    end_d = date_to or (max(r.date for r in rows) if rows else date.today())
+    user_summaries = {}
 
     # Append Data Rows
     current_row = 4
@@ -190,16 +236,31 @@ def export_excel(rows, lang='ar'):
         shift_status_text = _get_status_text(row.shift_status, row.status, lang=lang)
         late_text = yes_text if row.is_late else no_text
 
+        if row.user_id not in user_summaries:
+            user_summaries[row.user_id] = get_employee_attendance_summary(row.user, start_d, end_d)
+        summary = user_summaries[row.user_id]
+
+        is_day_off = not row.user.is_workday(row.date)
+        day_off_text = yes_text if is_day_off else no_text
+
+        absent_count = len(summary['absent_days'])
+        absent_dates_str = ', '.join(d.strftime('%Y-%m-%d') for d in summary['absent_days'])
+        absent_text = f"{absent_count} ({absent_dates_str})" if absent_count > 0 else t('no_absent_days', lang=lang)
+        rate_text = f"{summary['attendance_rate']}%"
+
         data = [
             row.date.isoformat(),
-            row.user.name,
-            row.zone.name if row.zone else '',
+            _sanitize_cell(row.user.name),
+            _sanitize_cell(row.zone.name if row.zone else ''),
             _to_cairo(row.sign_in_time),
             _to_cairo(row.sign_out_time) if row.sign_out_time else '—',
             formatted_hours,
             shift_status_text,
             late_text,
             row.late_minutes or 0,
+            day_off_text,
+            absent_text,
+            rate_text,
         ]
         ws.append(data)
         ws.row_dimensions[current_row].height = 22
@@ -228,6 +289,16 @@ def export_excel(rows, lang='ar'):
             if col_num == 8 and row.is_late:
                 cell.fill = fill_danger
                 cell.font = font_danger
+
+            # Day off worked (Column 10) styling
+            if col_num == 10 and is_day_off:
+                cell.fill = fill_info
+                cell.font = font_info
+
+            # Absent count (Column 11) styling
+            if col_num == 11 and absent_count > 0:
+                cell.fill = fill_warn
+                cell.font = font_warn
 
         current_row += 1
 

@@ -5,7 +5,8 @@ Batch 6 created this file empty as a checkpoint. Batch 7 filled in sign_in().
 Batch 8 adds sign_out() below.
 """
 
-from datetime import date, datetime, timezone
+import math
+from datetime import date, datetime, timezone, timedelta, time
 from zoneinfo import ZoneInfo
 
 from app.extensions import db
@@ -13,6 +14,7 @@ from app.models import Attendance
 from app.services import geo_service
 
 CAIRO_TZ = ZoneInfo("Africa/Cairo")
+DEFAULT_SIGN_IN_END_TIME = time(18, 0)
 
 
 def _now_utc():
@@ -38,11 +40,24 @@ def sign_in(user, latitude, longitude):
     except (TypeError, ValueError):
         raise ValueError('مقدرناش نقرأ إحداثيات موقعك، جرب تاني')
 
+    # SEC-06: reject NaN / Inf that would silently pass the distance check
+    if not (math.isfinite(latitude) and math.isfinite(longitude)):
+        raise ValueError('إحداثيات الموقع غير صالحة، حاول تاني')
+
+    # Basic range sanity: lat ∈ [-90, 90], lng ∈ [-180, 180], not (0, 0)
+    if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
+        raise ValueError('إحداثيات الموقع خارج النطاق المسموح به')
+    if latitude == 0.0 and longitude == 0.0:
+        raise ValueError('إحداثيات الموقع غير صالحة، حاول تاني')
+
     now_utc = _now_utc()
 
     # Business decision (sign-in window) is made on the server clock, converted
     # to Cairo local time for the comparison — never on client/browser time.
-    now_cairo_time = now_utc.astimezone(CAIRO_TZ).time()
+    now_cairo = now_utc.astimezone(CAIRO_TZ)
+    now_cairo_time = now_cairo.time()
+    today = now_cairo.date()
+
     if not (shift.shift_start_time <= now_cairo_time <= shift.sign_in_end_time):
         raise ValueError('برا وقت تسجيل الحضور المسموح بيه للشفت ده')
 
@@ -50,7 +65,6 @@ def sign_in(user, latitude, longitude):
     if not inside:
         raise ValueError('انت برا نطاق الفرع، اقترب من المقر وحاول تاني')
 
-    today = date.today()
     existing = Attendance.query.filter_by(user_id=user.id, date=today).first()
     if existing and (existing.status == 'active' or existing.sign_in_time is not None):
         raise ValueError('انت مسجل حضور بالفعل النهاردة')
@@ -88,7 +102,9 @@ def sign_out(user, latitude, longitude):
     Raises ValueError with a specific, user-facing message per failure case.
     Returns the updated Attendance row on success.
     """
-    today = date.today()
+    now_utc = _now_utc()
+    today = now_utc.astimezone(CAIRO_TZ).date()
+
     attendance = Attendance.query.filter_by(
         user_id=user.id, date=today, status='active'
     ).first()
@@ -103,6 +119,14 @@ def sign_out(user, latitude, longitude):
         longitude = float(longitude)
     except (TypeError, ValueError):
         raise ValueError('مقدرناش نقرأ إحداثيات موقعك، جرب تاني')
+
+    # SEC-06: same validation as sign_in
+    if not (math.isfinite(latitude) and math.isfinite(longitude)):
+        raise ValueError('إحداثيات الموقع غير صالحة، حاول تاني')
+    if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
+        raise ValueError('إحداثيات الموقع خارج النطاق المسموح به')
+    if latitude == 0.0 and longitude == 0.0:
+        raise ValueError('إحداثيات الموقع غير صالحة، حاول تاني')
 
     inside, distance = geo_service.is_inside_zone(latitude, longitude, zone)
     if not inside:
@@ -219,3 +243,152 @@ def get_history(user, limit=30):
         .limit(limit)
         .all()
     )
+
+
+def get_employee_attendance_summary(user, start, end):
+    """
+    Calculates comprehensive attendance summary for `user` across [start, end].
+
+    Rules:
+    - Count only dates from max(start, user.created_at.date()) to min(end, cairo_today).
+    - Expected days = dates in that range where user.is_workday(date).
+    - Do not mark TODAY as absent until the employee's shift sign_in_end_time has passed.
+    - Uses the employee's own shift_setting, falling back to DEFAULT_SIGN_IN_END_TIME (18:00).
+    - Attended = an Attendance row exists for that user and date.
+    
+    Returns a dict with:
+      expected_days: int
+      attended_days: int
+      attended_expected_days: int
+      absent_days: list of dates
+      extra_days: list of dates (attended on non-working day)
+      late_count: int
+      total_hours: float
+      attendance_rate: float (percentage)
+      pending_today: bool
+    """
+    cairo_now = _now_utc().astimezone(CAIRO_TZ)
+    cairo_today = cairo_now.date()
+    current_cairo_time = cairo_now.time()
+
+    user_join_date = user.created_at.date() if user.created_at else start
+    effective_start = max(start, user_join_date)
+    effective_end = min(end, cairo_today)
+
+    if effective_start > effective_end:
+        return {
+            'expected_days': 0,
+            'attended_days': 0,
+            'attended_expected_days': 0,
+            'absent_days': [],
+            'extra_days': [],
+            'late_count': 0,
+            'total_hours': 0.0,
+            'attendance_rate': 100.0,
+            'pending_today': False,
+        }
+
+    attendances = Attendance.query.filter(
+        Attendance.user_id == user.id,
+        Attendance.date >= effective_start,
+        Attendance.date <= effective_end
+    ).all()
+
+    attendance_by_date = {att.date: att for att in attendances}
+
+    expected_dates = []
+    absent_days = []
+    extra_days = []
+    attended_on_expected = []
+    late_count = 0
+    total_hours = 0.0
+    pending_today = False
+
+    shift = user.shift_setting
+    sign_in_end = shift.sign_in_end_time if (shift and shift.sign_in_end_time) else DEFAULT_SIGN_IN_END_TIME
+
+    curr = effective_start
+    while curr <= effective_end:
+        is_workday = user.is_workday(curr)
+        att = attendance_by_date.get(curr)
+
+        if is_workday:
+            expected_dates.append(curr)
+            if att:
+                attended_on_expected.append(curr)
+            else:
+                if curr == cairo_today:
+                    if current_cairo_time > sign_in_end:
+                        absent_days.append(curr)
+                    else:
+                        pending_today = True
+                else:
+                    absent_days.append(curr)
+        else:
+            if att:
+                extra_days.append(curr)
+
+        curr += timedelta(days=1)
+
+    for att in attendances:
+        if att.is_late:
+            late_count += 1
+        if att.total_hours is not None:
+            total_hours += att.total_hours
+
+    expected_count = len(expected_dates)
+    attended_count = len(attendances)
+
+    evaluated_expected = expected_count - (1 if pending_today else 0)
+    if evaluated_expected > 0:
+        attendance_rate = round((len(attended_on_expected) / evaluated_expected) * 100.0, 1)
+    else:
+        attendance_rate = 100.0
+
+    return {
+        'expected_days': expected_count,
+        'attended_days': attended_count,
+        'attended_expected_days': len(attended_on_expected),
+        'absent_days': absent_days,
+        'extra_days': extra_days,
+        'late_count': late_count,
+        'total_hours': round(total_hours, 1),
+        'attendance_rate': attendance_rate,
+        'pending_today': pending_today,
+    }
+
+
+def admin_close_attendance(attendance_id):
+    """SEC-09: Close an unclosed/active Attendance row on behalf of an employee who
+    forgot to sign out. Computes work hours and shift_status from server clock time.
+    """
+    attendance = Attendance.query.get(attendance_id)
+    if not attendance:
+        raise ValueError('سجل الحضور غير موجود')
+
+    if attendance.status != 'active':
+        raise ValueError('سجل الحضور مغلق بالفعل')
+
+    now_utc = _now_utc()
+    sign_in_time = attendance.sign_in_time
+    if sign_in_time:
+        if sign_in_time.tzinfo is None:
+            sign_in_time = sign_in_time.replace(tzinfo=timezone.utc)
+        total_seconds = max(0.0, (now_utc - sign_in_time).total_seconds())
+        total_hours = total_seconds / 3600.0
+    else:
+        total_hours = 0.0
+
+    user = attendance.user
+    shift = user.shift_setting if user else None
+    min_hours = shift.min_full_shift_hours if shift else 3.0
+    shift_status = 'full_shift' if total_hours >= min_hours else 'short_shift'
+
+    attendance.sign_out_time = now_utc
+    attendance.total_hours = round(total_hours, 2)
+    attendance.shift_status = shift_status
+    attendance.status = 'completed'
+
+    db.session.commit()
+    return attendance
+

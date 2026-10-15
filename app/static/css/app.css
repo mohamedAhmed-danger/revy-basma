@@ -1661,6 +1661,175 @@ select.field__input {
 }
 
 /* ==========================================================================
+   Employee Schedule & Attendance Progress Styles
+   Mobile-first, RTL / LTR compatible using logical properties
+   ========================================================================== */
+
+.schedule-status-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-block: 10px;
+  padding-inline: 14px;
+  border-radius: var(--radius-md);
+  margin-block-end: 14px;
+  font-size: 13px;
+  font-weight: 700;
+  border-inline-start-width: 4px;
+  border-inline-start-style: solid;
+}
+
+.schedule-status-banner--work {
+  background: var(--ok-bg);
+  border-inline-start-color: var(--ok);
+  color: var(--ok-dark);
+}
+
+.schedule-status-banner--off {
+  background: var(--purple-light);
+  border-inline-start-color: var(--purple);
+  color: var(--purple);
+}
+
+.schedule-strip {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-block: 12px;
+}
+
+.schedule-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-block: 8px;
+  padding-inline: 2px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  text-align: center;
+  min-width: 0;
+  transition: all 0.2s ease;
+}
+
+.schedule-day__name {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-block-end: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.schedule-day__badge {
+  font-size: 9px;
+  font-weight: 700;
+  padding-block: 2px;
+  padding-inline: 4px;
+  border-radius: var(--radius-xs);
+  display: inline-block;
+  line-height: 1.2;
+}
+
+.schedule-day--work .schedule-day__badge {
+  background: var(--ok-bg);
+  color: var(--ok-dark);
+}
+
+.schedule-day--off .schedule-day__badge {
+  background: var(--border-light);
+  color: var(--text-light);
+}
+
+.schedule-day--today {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.25);
+}
+
+.schedule-day--today .schedule-day__name {
+  color: var(--primary-dark);
+  font-weight: 800;
+}
+
+.schedule-day__today-indicator {
+  font-size: 8px;
+  font-weight: 800;
+  color: var(--primary-dark);
+  margin-block-start: 2px;
+  letter-spacing: -0.02em;
+}
+
+.schedule-time-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-block: 10px;
+  border-block-start: 1px solid var(--border-light);
+  font-size: 13px;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.schedule-time-row__label {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.schedule-time-row__value {
+  color: var(--text-main);
+  font-weight: 700;
+}
+
+.month-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-block-end: 8px;
+}
+
+.month-progress-stat {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.day-off-notice {
+  background: var(--info-bg);
+  border-inline-start: 4px solid var(--info);
+  padding-block: 12px;
+  padding-inline: 14px;
+  border-radius: var(--radius-md);
+  margin-block-end: 14px;
+  font-size: 13px;
+  color: var(--text-main);
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.day-off-notice__icon {
+  flex-shrink: 0;
+  margin-block-start: 1px;
+}
+
+.btn--day-off {
+  background: var(--surface);
+  color: var(--primary-dark);
+  border: 2px solid var(--primary);
+  box-shadow: var(--shadow-xs);
+}
+
+.btn--day-off:hover {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  border-color: var(--primary-hover);
+}
+
+/* ==========================================================================
    Responsive Breakpoints
    ========================================================================== */
 @media (max-width: 992px) {

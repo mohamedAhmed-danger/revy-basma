@@ -64,7 +64,7 @@
       <div class="kpi-card__body">
         <div class="kpi-card__label">{{ t('kpi_total_employees') }}</div>
         <div class="kpi-card__value">{{ kpis.total_employees }}</div>
-        <div class="kpi-card__sub">{{ t('all') }}</div>
+        <div class="kpi-card__sub">{{ kpis.scheduled_total }} {{ t('scheduled_today') }}</div>
       </div>
     </div>
 
@@ -75,7 +75,24 @@
       <div class="kpi-card__body">
         <div class="kpi-card__label">{{ t('kpi_present_now') }}</div>
         <div class="kpi-card__value">{{ kpis.present_count }}</div>
-        <div class="kpi-card__sub">{{ (kpis.present_count / kpis.total_employees * 100)|round|int if kpis.total_employees else 0 }}% {{ t('kpi_of_total') }}</div>
+        <div class="kpi-card__sub">
+          {% if kpis.extra_present_count > 0 %}
+            {{ kpis.scheduled_present_count }} {{ t('scheduled_today') }} + {{ kpis.extra_present_count }} {{ t('extra_present') }}
+          {% else %}
+            {{ (kpis.scheduled_present_count / kpis.scheduled_total * 100)|round|int if kpis.scheduled_total else 0 }}% {{ t('kpi_of_total') }}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-card__icon" style="background:#EFF6FF; color:#2563EB;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      <div class="kpi-card__body">
+        <div class="kpi-card__label">{{ t('kpi_pending_today') }}</div>
+        <div class="kpi-card__value" style="color:#2563EB;">{{ kpis.pending_count }}</div>
+        <div class="kpi-card__sub">{{ (kpis.pending_count / kpis.scheduled_total * 100)|round|int if kpis.scheduled_total else 0 }}% {{ t('scheduled_today') }}</div>
       </div>
     </div>
 
@@ -86,7 +103,7 @@
       <div class="kpi-card__body">
         <div class="kpi-card__label">{{ t('kpi_absent_today') }}</div>
         <div class="kpi-card__value">{{ kpis.absent_count }}</div>
-        <div class="kpi-card__sub">{{ (kpis.absent_count / kpis.total_employees * 100)|round|int if kpis.total_employees else 0 }}% {{ t('kpi_of_total') }}</div>
+        <div class="kpi-card__sub">{{ (kpis.absent_count / kpis.scheduled_total * 100)|round|int if kpis.scheduled_total else 0 }}% {{ t('scheduled_today') }}</div>
       </div>
     </div>
 
@@ -136,28 +153,42 @@
             <span class="donut-legend__dot" style="background:#10B981"></span>
             <span class="donut-legend__name">{{ t('kpi_full_shift') }}</span>
             <span class="donut-legend__value">{{ kpis.full_shift_count }}</span>
-            <span class="donut-legend__pct">({{ (kpis.full_shift_count / kpis.total_employees * 100)|round|int if kpis.total_employees else 0 }}%)</span>
+            <span class="donut-legend__pct">({{ (kpis.full_shift_count / kpis.present_count * 100)|round|int if kpis.present_count else 0 }}%)</span>
           </div>
           <div class="donut-legend__row">
             <span class="donut-legend__dot" style="background:#F59E0B"></span>
             <span class="donut-legend__name">{{ t('kpi_short_shift') }}</span>
             <span class="donut-legend__value">{{ kpis.short_shift_count }}</span>
-            <span class="donut-legend__pct">({{ (kpis.short_shift_count / kpis.total_employees * 100)|round|int if kpis.total_employees else 0 }}%)</span>
+            <span class="donut-legend__pct">({{ (kpis.short_shift_count / kpis.present_count * 100)|round|int if kpis.present_count else 0 }}%)</span>
           </div>
           {% if kpis.in_progress_count %}
           <div class="donut-legend__row">
             <span class="donut-legend__dot" style="background:#4AA8E0"></span>
             <span class="donut-legend__name">{{ t('in_progress') }}</span>
             <span class="donut-legend__value">{{ kpis.in_progress_count }}</span>
-            <span class="donut-legend__pct">({{ (kpis.in_progress_count / kpis.total_employees * 100)|round|int if kpis.total_employees else 0 }}%)</span>
+            <span class="donut-legend__pct">({{ (kpis.in_progress_count / kpis.present_count * 100)|round|int if kpis.present_count else 0 }}%)</span>
           </div>
           {% endif %}
+          <div class="donut-legend__row">
+            <span class="donut-legend__dot" style="background:#3B82F6"></span>
+            <span class="donut-legend__name">{{ t('pending') }}</span>
+            <span class="donut-legend__value">{{ kpis.pending_count }}</span>
+            <span class="donut-legend__pct">({{ (kpis.pending_count / kpis.scheduled_total * 100)|round|int if kpis.scheduled_total else 0 }}%)</span>
+          </div>
           <div class="donut-legend__row">
             <span class="donut-legend__dot" style="background:#CBD5E1"></span>
             <span class="donut-legend__name">{{ t('absent') }}</span>
             <span class="donut-legend__value">{{ kpis.absent_count }}</span>
-            <span class="donut-legend__pct">({{ (kpis.absent_count / kpis.total_employees * 100)|round|int if kpis.total_employees else 0 }}%)</span>
+            <span class="donut-legend__pct">({{ (kpis.absent_count / kpis.scheduled_total * 100)|round|int if kpis.scheduled_total else 0 }}%)</span>
           </div>
+          {% if kpis.extra_present_count %}
+          <div class="donut-legend__row">
+            <span class="donut-legend__dot" style="background:#8B5CF6"></span>
+            <span class="donut-legend__name">{{ t('extra_present') }}</span>
+            <span class="donut-legend__value">{{ kpis.extra_present_count }}</span>
+            <span class="donut-legend__pct">({{ (kpis.extra_present_count / kpis.present_count * 100)|round|int if kpis.present_count else 0 }}%)</span>
+          </div>
+          {% endif %}
         </div>
       </div>
     </div>
@@ -260,7 +291,14 @@
             </td>
             <td>
               {% if row.status == 'active' %}
-                <span class="badge badge--info"><span class="badge__dot"></span>{{ t('badge_active') }}</span>
+                <div style="display:inline-flex; align-items:center; gap:8px;">
+                  <span class="badge badge--info"><span class="badge__dot"></span>{{ t('badge_active') }}</span>
+                  <form method="POST" action="{{ url_for('admin.attendance_close', attendance_id=row.id) }}" style="display:inline;" onsubmit="return confirm('{{ t('confirm_close_attendance') }}');">
+                    <button type="submit" class="btn btn--sm btn--secondary" title="{{ t('btn_close_attendance') }}" style="padding:2px 8px; font-size:11px; line-height:1.2;">
+                      {{ t('close') }}
+                    </button>
+                  </form>
+                </div>
               {% elif row.shift_status == 'full_shift' %}
                 <span class="badge badge--ok"><span class="badge__dot"></span>{{ t('badge_full_shift') }}</span>
               {% elif row.shift_status == 'short_shift' %}
@@ -296,13 +334,17 @@
           {{ kpis.full_shift_count }},
           {{ kpis.short_shift_count }}
           {% if kpis.in_progress_count %}, {{ kpis.in_progress_count }}{% endif %},
+          {{ kpis.pending_count }},
           {{ kpis.absent_count }}
+          {% if kpis.extra_present_count %}, {{ kpis.extra_present_count }}{% endif %}
         ];
         var donutColors = [
           '#10B981',
           '#F59E0B'
           {% if kpis.in_progress_count %}, '#4AA8E0'{% endif %},
+          '#3B82F6',
           '#CBD5E1'
+          {% if kpis.extra_present_count %}, '#8B5CF6'{% endif %}
         ];
 
         new Chart(donutCtx, {

@@ -13,15 +13,29 @@ def test_rp_config_defaults(app):
 
 
 def test_rp_config_nginx_headers(app):
+    # SEC-07: Request headers like X-Forwarded-Host must NOT override RP ID / origin
     headers = {
         'Host': 'localhost',
-        'X-Forwarded-Host': 'prestige-basma.revyai.tech',
+        'X-Forwarded-Host': 'attacker-controlled.site',
         'X-Forwarded-Proto': 'https',
     }
     with app.test_request_context('/', headers=headers):
         rp_id, rp_name, origin = webauthn_service._rp_config()
-        assert rp_id == 'prestige-basma.revyai.tech'
-        assert origin == 'https://prestige-basma.revyai.tech'
+        # Should stay at config/localhost, ignoring spoofed header
+        assert rp_id == 'localhost'
+        assert origin == 'http://localhost:5000'
+
+    # When explicitly configured via app.config, it respects config
+    app.config['WEBAUTHN_RP_ID'] = 'prestige-basma.revyai.tech'
+    app.config['WEBAUTHN_ORIGIN'] = 'https://prestige-basma.revyai.tech'
+    try:
+        with app.test_request_context('/', headers=headers):
+            rp_id, rp_name, origin = webauthn_service._rp_config()
+            assert rp_id == 'prestige-basma.revyai.tech'
+            assert origin == 'https://prestige-basma.revyai.tech'
+    finally:
+        app.config.pop('WEBAUTHN_RP_ID', None)
+        app.config.pop('WEBAUTHN_ORIGIN', None)
 
 
 def test_build_registration_options(app):

@@ -20,7 +20,7 @@
     
     <div class="field">
       <label class="field__label" for="name">{{ t('col_employee') }} / {{ t('username') }}</label>
-      <input class="field__input" style="width:100%;" type="text" id="name" name="name" placeholder="مثال: أحمد محمد" required autofocus>
+      <input class="field__input" style="width:100%;" type="text" id="name" name="name" value="{{ form_data.get('name', '') }}" placeholder="مثال: أحمد محمد" required autofocus>
     </div>
 
     <div class="field">
@@ -33,7 +33,7 @@
       <select class="field__input" style="width:100%;" id="zone_id" name="zone_id" required>
         <option value="">اختر المقر / الفرع...</option>
         {% for zone in zones %}
-          <option value="{{ zone.id }}">{{ zone.name }} (نطاق {{ zone.radius_meters }}m)</option>
+          <option value="{{ zone.id }}" {% if form_data.get('zone_id')|string == zone.id|string %}selected{% endif %}>{{ zone.name }} (نطاق {{ zone.radius_meters }}m)</option>
         {% endfor %}
       </select>
     </div>
@@ -43,9 +43,21 @@
       <select class="field__input" style="width:100%;" id="shift_setting_id" name="shift_setting_id" required>
         <option value="">اختر الشفت...</option>
         {% for shift in shifts %}
-          <option value="{{ shift.id }}">{{ shift.name }} (من {{ shift.shift_start_time.strftime('%H:%M') }} إلى {{ shift.sign_in_end_time.strftime('%H:%M') }})</option>
+          <option value="{{ shift.id }}" {% if form_data.get('shift_setting_id')|string == shift.id|string %}selected{% endif %}>{{ shift.name }} (من {{ shift.shift_start_time.strftime('%H:%M') }} إلى {{ shift.sign_in_end_time.strftime('%H:%M') }})</option>
         {% endfor %}
       </select>
+    </div>
+
+    <div class="field">
+      <label class="field__label">{{ t('working_days') }}</label>
+      <div style="display:flex; flex-wrap:wrap; gap:10px 16px; margin-top:6px;">
+        {% for opt in weekday_options %}
+          <label style="display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; cursor:pointer; background:var(--surface-alt, #f8fafc); padding:6px 12px; border:1px solid var(--border-color); border-radius:var(--radius-sm, 6px);">
+            <input type="checkbox" name="work_days" value="{{ opt.day }}" {% if opt.day in selected_work_days %}checked{% endif %}>
+            <span>{{ t(opt.name_key) }}</span>
+          </label>
+        {% endfor %}
+      </div>
     </div>
 
     <div style="display:flex; gap:12px; margin-top:10px;">
