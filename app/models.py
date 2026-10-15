@@ -19,7 +19,8 @@ class User(UserMixin, db.Model):
     work_days = db.Column(db.String(20), nullable=False, default='5,6,0,1,2,3', server_default='5,6,0,1,2,3')
 
     # relationships
-    attendances = db.relationship('Attendance', backref='user', lazy=True)
+    attendances = db.relationship('Attendance', backref='user', lazy=True, cascade="all, delete-orphan")
+    webauthn_credentials = db.relationship('WebAuthnCredential', backref='user', lazy=True, cascade="all, delete-orphan")
 
     @property
     def work_days_list(self):
@@ -130,6 +131,4 @@ class WebAuthnCredential(db.Model):
 
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     last_used_at = db.Column(db.DateTime, nullable=True)
-
-    # relationship
-    user = db.relationship('User', backref='webauthn_credentials', lazy=True)
+

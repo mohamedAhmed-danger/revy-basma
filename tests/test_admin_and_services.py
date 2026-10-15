@@ -120,6 +120,19 @@ def test_create_and_manage_user(app, db_session):
     assert updated_user.name == "Updated Employee"
     assert updated_user.is_active is False
 
-    # Delete user
+    # Delete user with attendances and credentials (cascade test)
+    from app.models import Attendance, WebAuthnCredential
+    from datetime import date
+    att = Attendance(user_id=new_user.id, zone_id=zone.id, date=date(2026, 1, 1), status='completed')
+    cred = WebAuthnCredential(user_id=new_user.id, credential_id="test_cred_del", public_key=b"test_key")
+    db_session.add(att)
+    db_session.add(cred)
+    db_session.commit()
+    assert Attendance.query.filter_by(user_id=new_user.id).count() == 1
+    assert WebAuthnCredential.query.filter_by(user_id=new_user.id).count() == 1
+
     auth_service.delete_user(new_user.id)
     assert User.query.get(new_user.id) is None
+    assert Attendance.query.filter_by(user_id=new_user.id).count() == 0
+    assert WebAuthnCredential.query.filter_by(user_id=new_user.id).count() == 0
+
